@@ -1,0 +1,7 @@
+.vscode/
+.idea
+.codemate
+build/
+build_ut/
+output/
+cmake-build-debug

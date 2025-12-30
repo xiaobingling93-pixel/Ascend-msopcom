@@ -1,0 +1,807 @@
+/* -------------------------------------------------------------------------
+ * This file is part of the MindStudio project.
+ * Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+ *
+ * MindStudio is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *
+ *          http://license.coscl.org.cn/MulanPSL2
+ *
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * ------------------------------------------------------------------------- */
+
+
+#include "InstrReport.h"
+
+#include <iostream>
+
+#include "ConfigManager.h"
+#include "DevMemManager.h"
+#include "KernelContext.h"
+#include "DeviceContext.h"
+#include "KernelMatcher.h"
+#include "acl_rt_impl/AscendclImplOrigin.h"
+#include "core/HijackedLayerManager.h"
+#include "runtime/inject_helpers/FuncContext.h"
+#include "runtime/inject_helpers/LaunchContext.h"
+#include "runtime/inject_helpers/LaunchManager.h"
+#include "runtime/inject_helpers/RegisterContext.h"
+#include "runtime/inject_helpers/MemoryDataCollect.h"
+#include "utils/InjectLogger.h"
+#include "core/PlatformConfig.h"
+#include "core/LocalDevice.h"
+#include "runtime.h"
+#include "runtime/RuntimeOrigin.h"
+#include "utils/Protocol.h"
+#include "InteractHelper.h"
+#include "utils/Numeric.h"
+
+namespace {
+std::mutex g_instrMutex;
+
+inline bool CheckBlockDimValid(uint64_t blockDim)
+{
+    if (blockDim == 0) {
+        ERROR_LOG("blockDim must be greater than 0");
+        return false;
+    } else if (blockDim > MAX_BLOCKDIM_NUMS) {
+        ERROR_LOG("blockDim set as %lu exceeds then maximum value %lu", blockDim, MAX_BLOCKDIM_NUMS);
+        return false;
+    }
+    return true;
+}
+
+inline bool HasSubBlocks(DeviceType deviceType)
+{
+    switch (deviceType) {
+        case DeviceType::ASCEND_910B1:
+        case DeviceType::ASCEND_910B2:
+        case DeviceType::ASCEND_910B3:
+        case DeviceType::ASCEND_910B4:
+        case DeviceType::ASCEND_910_950z:
+        case DeviceType::ASCEND_910_9579:
+        case DeviceType::ASCEND_910_957b:
+        case DeviceType::ASCEND_910_957d:
+        case DeviceType::ASCEND_910_9581:
+        case DeviceType::ASCEND_910_9589:
+        case DeviceType::ASCEND_910_958a:
+        case DeviceType::ASCEND_910_958b:
+        case DeviceType::ASCEND_910_9599:
+            return true;
+        case DeviceType::ASCEND_910_PREMIUM_A:
+        case DeviceType::ASCEND_310P:
+            return false;
+        case DeviceType::INVALID:
+        default :
+            return false;
+    }
+}
+
+inline bool SupportSimt(DeviceType deviceType)
+{
+    switch (deviceType) {
+        case DeviceType::ASCEND_910_950z:
+        case DeviceType::ASCEND_910_9579:
+        case DeviceType::ASCEND_910_957b:
+        case DeviceType::ASCEND_910_957d:
+        case DeviceType::ASCEND_910_9581:
+        case DeviceType::ASCEND_910_9589:
+        case DeviceType::ASCEND_910_958a:
+        case DeviceType::ASCEND_910_958b:
+        case DeviceType::ASCEND_910_9599:
+            return true;
+        case DeviceType::ASCEND_910B1:
+        case DeviceType::ASCEND_910B2:
+        case DeviceType::ASCEND_910B3:
+        case DeviceType::ASCEND_910B4:
+        case DeviceType::ASCEND_910_PREMIUM_A:
+        case DeviceType::ASCEND_310P:
+        case DeviceType::INVALID:
+        default :
+            return false;
+    }
+}
+
+inline uint32_t GetUbSize(DeviceType deviceType)
+{
+    switch (deviceType) {
+        case DeviceType::ASCEND_910_950z:
+        case DeviceType::ASCEND_910_9579:
+        case DeviceType::ASCEND_910_957b:
+        case DeviceType::ASCEND_910_957d:
+        case DeviceType::ASCEND_910_9581:
+        case DeviceType::ASCEND_910_9589:
+        case DeviceType::ASCEND_910_958a:
+        case DeviceType::ASCEND_910_958b:
+        case DeviceType::ASCEND_910_9599:
+            return C310_UB_SIZE;
+        case DeviceType::ASCEND_910B1:
+        case DeviceType::ASCEND_910B2:
+        case DeviceType::ASCEND_910B3:
+        case DeviceType::ASCEND_910B4:
+            return C220_UB_SIZE;
+        case DeviceType::ASCEND_310P:
+            return M200_UB_SIZE;
+        default :
+            return 0UL;
+    }
+}
+
+inline KernelType MagicToKernelType(uint32_t magic)
+{
+    KernelType kernelType {KernelType::INVALID};
+    if (magic == RT_DEV_BINARY_MAGIC_ELF_AIVEC) {
+        kernelType = KernelType::AIVEC;
+    } else if (magic == RT_DEV_BINARY_MAGIC_ELF_AICUBE) {
+        kernelType = KernelType::AICUBE;
+    } else if (magic == RT_DEV_BINARY_MAGIC_ELF) {
+        kernelType = KernelType::MIX;
+    } else if (magic == RT_DEV_BINARY_MAGIC_ELF_AICPU) {
+        kernelType = KernelType::AICPU;
+    } else {
+        DEBUG_LOG("INVALID kernel binary magic number %u", magic);
+    }
+    return kernelType;
+}
+
+inline uint64_t GetAllThreadSize(RecordGlobalHead const &globalHead)
+{
+    return (globalHead.simtInfo.threadByteSize + sizeof(SimtRecordBlockHead)) * SIMT_THREAD_MAX_SIZE;
+}
+
+inline uint64_t GetRecordHeadSize(uint32_t hostMemoryNum)
+{
+    return CeilByAlignSize<CACHE_LINE_SIZE>(sizeof(RecordBlockHead) + hostMemoryNum * sizeof(HostMemoryInfo));
+}
+
+inline bool AssignMemSize(RecordGlobalHead &head, uint64_t blockDim, DeviceType deviceType)
+{
+    std::lock_guard<std::mutex> guard(g_instrMutex);
+    // calculate total block dim
+    uint64_t totalBlockDim{};
+    uint64_t totalCacheSize{};
+    uint64_t singleBlockSize = head.checkParms.cacheSize;
+    if (HasSubBlocks(deviceType)) {
+        totalBlockDim = C220_MIX_SUB_BLOCKDIM * blockDim;
+        const uint8_t vecCubeSum = 2;
+        totalCacheSize = head.checkParms.checkBlockId == CHECK_ALL_BLOCK ?
+            singleBlockSize * totalBlockDim :
+            singleBlockSize * vecCubeSum +
+            SINGLE_CHECK_OTHER_BLOCK_CACHE_SIZE * (totalBlockDim - vecCubeSum);
+    } else {
+        totalBlockDim = blockDim;
+        totalCacheSize = head.checkParms.checkBlockId == CHECK_ALL_BLOCK ?
+            totalBlockDim * singleBlockSize :
+            singleBlockSize + SINGLE_CHECK_OTHER_BLOCK_CACHE_SIZE * (totalBlockDim - 1);
+    }
+    head.kernelInfo.totalBlockDim = totalBlockDim;
+    head.kernelInfo.totalCacheSize = totalCacheSize;
+    if (singleBlockSize == 0 || singleBlockSize > MAX_RECORD_BUF_SIZE_EACH_BLOCK ||
+        totalCacheSize > MAX_RECORD_BUF_SIZE_ALL_BLOCK) {
+            ERROR_LOG("cache size must be [1, 8192](MB), total cache size must less than %u"
+                "MB, but current cache size is %lu MB, total cache size is %lu MB",
+                MAX_RECORD_BUF_SIZE_ALL_BLOCK, singleBlockSize, totalCacheSize);
+            return false;
+    }
+    return true;
+}
+
+// calculate total block dim
+inline bool InitGlobalHead(RecordGlobalHead &head, uint64_t blockDim, KernelType kernelType, uint32_t hostMemoryNum)
+{
+    SanitizerConfig cliConfig = SanitizerConfigManager::Instance().GetConfig();
+    head.checkParms.cacheSize = cliConfig.cacheSize;
+    head.checkParms.checkBlockId = cliConfig.checkBlockId;
+    head.checkParms.defaultcheck = cliConfig.defaultCheck;
+    head.checkParms.racecheck = cliConfig.raceCheck;
+    head.checkParms.initcheck = cliConfig.initCheck;
+    head.checkParms.synccheck = cliConfig.syncCheck;
+    head.kernelInfo.kernelType = kernelType;
+    head.kernelInfo.kernelParamNum = KernelContext::Instance().GetKernelParamNum();
+    DeviceType deviceType = GetDeviceTypeBySocVersion(DeviceContext::Local().GetSocVersion());
+    head.supportSimt = SupportSimt(deviceType);
+    head.deviceInfo.ubSize = GetUbSize(deviceType);
+    if (head.supportSimt) {
+        // ====|=====|=============
+        // SIMD、SIMT、ShadowMemory
+        uint64_t threadByteSize =
+            static_cast<uint64_t>(cliConfig.cacheSize * MB_TO_BYTES * SIMT_CACHE_SIZE_RATIO / SIMT_THREAD_MAX_SIZE);
+        uint64_t shadowMemoryByteSize =
+            static_cast<uint64_t>(cliConfig.cacheSize * MB_TO_BYTES * SHADOW_MEM_CACHE_SIZE_RATIO);
+        if (threadByteSize >= sizeof(SimtRecordBlockHead)) {
+            head.simtInfo.threadByteSize = AlignDownSize<CACHE_LINE_SIZE>(threadByteSize - sizeof(SimtRecordBlockHead));
+            DEBUG_LOG("simtInfo.threadByteSize=%lu", head.simtInfo.threadByteSize);
+        } else {
+            uint32_t needCacheSize =
+                sizeof(SimtRecordBlockHead) *
+                static_cast<uint32_t>(SIMT_THREAD_MAX_SIZE / SIMT_CACHE_SIZE_RATIO / MB_TO_BYTES) + 1;
+            ERROR_LOG("cache-size:%u is too small, need cache-size=%u", head.checkParms.cacheSize, needCacheSize);
+            return false;
+        }
+        uint64_t simtOffset = static_cast<uint64_t>(cliConfig.cacheSize * MB_TO_BYTES *
+            (1 - SIMT_CACHE_SIZE_RATIO - SHADOW_MEM_CACHE_SIZE_RATIO));
+        head.simtInfo.offset = AlignDownSize<CACHE_LINE_SIZE>(simtOffset) + GetRecordHeadSize(hostMemoryNum);
+        DEBUG_LOG("simtInfo.offset=%lu", head.simtInfo.offset);
+
+        if (shadowMemoryByteSize < SHADOW_MEM_MIN_BYTE_SIZE) {
+            ERROR_LOG("cache-size:%u is too small for shadow memory, need cache-size >= %lu", head.checkParms.cacheSize,
+                static_cast<uint64_t>(SHADOW_MEM_MIN_BYTE_SIZE / MB_TO_BYTES / SHADOW_MEM_CACHE_SIZE_RATIO));
+            return false;
+        }
+
+        head.simtInfo.shadowMemoryOffset = AlignDownSize<CACHE_LINE_SIZE>(head.simtInfo.offset +
+            GetAllThreadSize(head) + CACHE_LINE_SIZE - 1);
+        head.simtInfo.shadowMemoryByteSize = shadowMemoryByteSize;
+        DEBUG_LOG("simtInfo shadowMemoryOffset=%lu shadowMemoryByteSize=%lu",
+            head.simtInfo.shadowMemoryOffset, head.simtInfo.shadowMemoryByteSize);
+    }
+    return AssignMemSize(head, blockDim, deviceType);
+}
+
+inline bool IsTargetBlockIdx(int16_t checkBlockId, uint64_t blockIdx)
+{
+    DeviceType deviceType = GetDeviceTypeBySocVersion(DeviceContext::Local().GetSocVersion());
+    if (HasSubBlocks(deviceType)) {
+        uint64_t vecTargetBlockIdx = checkBlockId / C220_VEC_SUB_BLOCKDIM * C220_MIX_SUB_BLOCKDIM +
+            checkBlockId % C220_VEC_SUB_BLOCKDIM;
+        uint64_t cubeTargetBlockIdx = checkBlockId * C220_MIX_SUB_BLOCKDIM + C220_VEC_SUB_BLOCKDIM;
+        return blockIdx == vecTargetBlockIdx || blockIdx == cubeTargetBlockIdx;
+    } else {
+        return blockIdx == static_cast<uint64_t>(checkBlockId);
+    }
+}
+
+inline void UpdateBlockHeadOffset(CheckParmsInfo &checkParms, uint64_t blockIdx, uint32_t hostMemoryNum,
+    uint64_t &blockHeadOffset)
+{
+    auto checkBlockId = checkParms.checkBlockId;
+    auto cacheSize = checkParms.cacheSize;
+    if (checkBlockId == CHECK_ALL_BLOCK || IsTargetBlockIdx(checkBlockId, blockIdx)) {
+        blockHeadOffset += cacheSize * MB_TO_BYTES + GetRecordHeadSize(hostMemoryNum);
+    } else {
+        blockHeadOffset += SINGLE_CHECK_OTHER_BLOCK_CACHE_SIZE * MB_TO_BYTES + GetRecordHeadSize(hostMemoryNum);
+    }
+}
+
+void SendKernelBlock(const std::string &body, int curBlkIdx, int totalBlkIdx)
+{
+    // report kernel records
+
+    if (curBlkIdx + 1 == totalBlkIdx) {
+        // 仅最后一个block时同步
+        DEBUG_LOG("Interact of the last kernel block.");
+        KernelRecordResponse response{};
+        constexpr uint32_t timeOutForLastBlock = 600;
+        bool interactGood = InteractHelper::Interact<std::string, KernelRecordResponse, timeOutForLastBlock>(
+            PacketType::KERNEL_RECORD, body, response);
+        if (!interactGood) {
+            std::string kernelName = KernelContext::Instance().GetLaunchName();
+            ERROR_LOG("Error occured when doing block interact for kernel %s", kernelName.c_str());
+        }
+    } else {
+        int32_t deviceId = 0;
+        aclrtGetDeviceImplOrigin(&deviceId);
+        InteractHelper::Notify(deviceId, PacketType::KERNEL_RECORD, body);
+    }
+}
+
+/// copy simd records in block to host
+bool CopySimdRecordToHost(uint8_t *memInfoHost, uint8_t *memInfo, RecordGlobalHead const &globalHead,
+                          RecordBlockHead const &head, uint64_t blockSize)
+{
+    (void)globalHead;
+
+    aclError error = aclrtMemcpyImplOrigin(memInfoHost, blockSize - sizeof(RecordGlobalHead) - sizeof(RecordBlockHead),
+        memInfo, head.writeOffset, ACL_MEMCPY_DEVICE_TO_HOST);
+    if (error != ACL_ERROR_NONE) {
+        ERROR_LOG("finalize memcpy record error: %d", error);
+        return false;
+    }
+    return true;
+}
+
+/// copy all simt thread records in block to host
+bool CopySimtRecordToHost(uint8_t *memInfoHost, uint8_t *memInfo, RecordGlobalHead const &globalHead,
+                          RecordBlockHead const &head, uint64_t blockSize)
+{
+    uint64_t allThreadSize = GetAllThreadSize(globalHead);
+    aclError error = aclrtMemcpyImplOrigin(memInfoHost,
+        blockSize - sizeof(RecordGlobalHead) - sizeof(RecordBlockHead) - head.writeOffset,
+        memInfo + globalHead.simtInfo.offset, allThreadSize, ACL_MEMCPY_DEVICE_TO_HOST);
+    if (error != ACL_ERROR_NONE) {
+        ERROR_LOG("finalize memcpy thread error:%d all thread size:%lu", error, allThreadSize);
+        return false;
+    }
+    return true;
+}
+
+void ReportParaBase(RecordBlockHead const &head, ParaBaseRegister &paraBase, bool &isReportParaBase)
+{
+    const auto &paraBaseInfo = head.registers.paraBase;
+    if (!isReportParaBase && paraBaseInfo.addr != ILLEGAL_ADDR && paraBaseInfo.size != 0) {
+        ReportMalloc(paraBaseInfo.addr, paraBaseInfo.size, MemInfoSrc::BYPASS, MemInfoDesc::PARA_BASE);
+        ReportMemset(paraBaseInfo.addr, paraBaseInfo.size, MemInfoSrc::BYPASS, MemInfoDesc::PARA_BASE);
+        paraBase = paraBaseInfo;
+        isReportParaBase = true;
+    }
+}
+
+/// 落盘在线检测对应的malloc内存，便于后续定位问题
+void DumpMemoryInfo(uint8_t *memInfoHost, uint8_t *memInfo, uint64_t blockSize, uint64_t blockIdx)
+{
+    aclError error = aclrtMemcpyImplOrigin(memInfoHost + sizeof(RecordGlobalHead),
+        blockSize - sizeof(RecordGlobalHead), memInfo + sizeof(RecordGlobalHead),
+        sizeof(RecordBlockHead), ACL_MEMCPY_DEVICE_TO_HOST);
+    auto *blockHead = reinterpret_cast<RecordBlockHead *>(memInfoHost + sizeof(RecordGlobalHead));
+    if (error != ACL_ERROR_NONE) {
+        ERROR_LOG("finalize memcpy hostMemInfo error: %d", error);
+        return;
+    }
+    if (blockHead->hostMemoryNum == 0U) { return; }
+    uint64_t recordHeadSize = GetRecordHeadSize(blockHead->hostMemoryNum);
+    if (sizeof(RecordGlobalHead) + recordHeadSize > blockSize) {
+        DEBUG_LOG("too much host memory");
+        return;
+    };
+    blockHead->hostMemoryInfoPtr = reinterpret_cast<HostMemoryInfo *>(blockHead + 1);
+    uint64_t allHeadSize = sizeof(RecordGlobalHead) + sizeof(RecordBlockHead);
+    error = aclrtMemcpyImplOrigin(memInfoHost + allHeadSize, blockSize - allHeadSize, memInfo + allHeadSize,
+        recordHeadSize - sizeof(RecordBlockHead), ACL_MEMCPY_DEVICE_TO_HOST);
+    if (error != ACL_ERROR_NONE) {
+        ERROR_LOG("finalize memcpy hostMemInfo error: %d", error);
+        return;
+    }
+    for (size_t i = 0; i < blockHead->hostMemoryNum; ++i) {
+        auto memory = blockHead->hostMemoryInfoPtr[i];
+        DEBUG_LOG("online memcheck in block:%lu addr:0x%lx size:%lu", blockIdx, memory.addr, memory.size);
+    }
+}
+
+std::vector<HostMemoryInfo> CopyExtraMallocToHostMemory()
+{
+    std::vector<HostMemoryInfo> hostMems = MemoryManage::Instance().MergeHostMems();
+    const auto &opMemInfo = KernelContext::Instance().GetOpMemInfo();
+    auto &inputAddrs = opMemInfo.inputParamsAddrInfos;
+    size_t extraIndex = 0;
+    for (const auto &mems : hostMems) {
+        if (mems.addr == 0x0 && mems.size == 0x0) {
+            break;
+        }
+        extraIndex++;
+    }
+    size_t hostMemSize = hostMems.size();
+    size_t inputSize = inputAddrs.size();
+    for (size_t i = 0; i < inputSize; ++i) {
+        if (extraIndex + i >= hostMemSize) {
+            ERROR_LOG("The index range exceeds the size limit of input hostMems. index: %ld max size: %ld",
+                extraIndex + i, hostMemSize);
+            break;
+        }
+        hostMems[extraIndex + i].size = inputAddrs[i].length;
+    }
+    if (opMemInfo.tilingDataSize > 0) {
+        if (extraIndex + inputSize < hostMemSize) {
+            hostMems[extraIndex + inputSize].size = opMemInfo.tilingDataSize;
+        } else {
+            ERROR_LOG("The index range exceeds the size limit of tiling hostMems. index: %ld max size: %ld",
+                extraIndex + inputSize, hostMemSize);
+        }
+    }
+    return hostMems;
+}
+
+void ReportMemInfo(uint8_t *memInfoHost, uint8_t *memInfo, uint64_t blockSize, uint64_t blockDim)
+{
+    // 1. copy RecordGlobalHead to host
+    aclError error = aclrtMemcpyImplOrigin(memInfoHost, blockSize, memInfo,
+                                           sizeof(RecordGlobalHead), ACL_MEMCPY_DEVICE_TO_HOST);
+    auto *globalHead = reinterpret_cast<RecordGlobalHead *>(memInfoHost);
+    if (error != ACL_ERROR_NONE) {
+        ERROR_LOG("finalize memcpy RecordGlobalHead error: %d", error);
+        return;
+    }
+    auto checkBlockId = globalHead->checkParms.checkBlockId;
+    uint64_t totalBlockDim = globalHead->kernelInfo.totalBlockDim;
+    DEBUG_LOG("sanitizer finalize with blockDim: %lu, totalBlockDim: %lu", blockDim, totalBlockDim);
+    uint64_t blockHeadOffset{};
+    bool isReportParaBase{};
+    ParaBaseRegister paraBase{};
+    uint64_t hostRecordOffset = sizeof(RecordGlobalHead) + sizeof(RecordBlockHead);
+    for (std::size_t blockIdx = 0; blockIdx < totalBlockDim; ++blockIdx) {
+        if (globalHead->supportSimt) { DumpMemoryInfo(memInfoHost, memInfo + blockHeadOffset, blockSize, blockIdx); }
+        // 2. copy RecordBlockHead to host
+        error = aclrtMemcpyImplOrigin(memInfoHost + sizeof(RecordGlobalHead), blockSize - sizeof(RecordGlobalHead),
+                                      memInfo + sizeof(RecordGlobalHead) + blockHeadOffset,
+                                      sizeof(RecordBlockHead), ACL_MEMCPY_DEVICE_TO_HOST);
+        auto *head = reinterpret_cast<RecordBlockHead *>(memInfoHost + sizeof(RecordGlobalHead));
+        if (error != ACL_ERROR_NONE) {
+            ERROR_LOG("finalize memcpy RecordBlockHead error: %d", error);
+            break;
+        }
+
+        DEBUG_LOG("get recordHead from subBlock %lu, offset:%lu, writeOffset:%lu recordCount:%lu, recordWriteCount:%lu",
+                  blockIdx, head->offset, head->writeOffset, head->recordCount, head->recordWriteCount);
+        if (head->offset == 0 || head->writeOffset == 0 || head->recordCount == 0 || head->recordWriteCount == 0) {
+            DEBUG_LOG("no kernel instruction record on subBlock %lu", blockIdx);
+        } else {
+            /// 上报ParaBase地址信息
+            ReportParaBase(*head, paraBase, isReportParaBase);
+
+            // 3. copy simd records in block to host
+            if (!CopySimdRecordToHost(memInfoHost + hostRecordOffset, memInfo + sizeof(RecordGlobalHead) +
+                GetRecordHeadSize(head->hostMemoryNum) + blockHeadOffset, *globalHead, *head, blockSize)) { break; }
+        }
+
+        /// 4. copy simt records, 当device支持simt并且是目标核的情况下才发送simt内存信息，否则会内存越界
+        uint64_t allThreadSize{};
+        if (globalHead->supportSimt && (checkBlockId == CHECK_ALL_BLOCK || IsTargetBlockIdx(checkBlockId, blockIdx))) {
+            if (!CopySimtRecordToHost(memInfoHost + hostRecordOffset + head->writeOffset,
+                memInfo + sizeof(RecordGlobalHead) + blockHeadOffset, *globalHead, *head, blockSize)) { break; }
+            allThreadSize = GetAllThreadSize(*globalHead);
+        }
+        UpdateBlockHeadOffset(globalHead->checkParms, blockIdx, head->hostMemoryNum, blockHeadOffset);
+        uint64_t memSize = hostRecordOffset + head->writeOffset + allThreadSize;
+        auto body = Serialize(memSize);
+        body.append(static_cast<char*>(static_cast<void*>(memInfoHost)), memSize);
+        SendKernelBlock(body, blockIdx, totalBlockDim);
+    }
+    /// 算子信息上报结束后，free掉para base地址
+    if (isReportParaBase) { ReportFree(paraBase.addr, MemInfoSrc::BYPASS, MemInfoDesc::PARA_BASE); }
+}
+
+bool InitSimtBlockInfo(RecordGlobalHead &recordGlobalHead, uint8_t *&memInfo, size_t blockIdx, uint64_t blockHeadOffset)
+{
+    if (!recordGlobalHead.supportSimt) {
+        return true;
+    }
+    std::vector<HostMemoryInfo> hostMems = CopyExtraMallocToHostMemory();
+    // 3. 初始化每个核RecordBlockHead中的hostMemoryInfoPtr
+    aclError error;
+    if (hostMems.size() != 0U) {
+        error = aclrtMemcpyImplOrigin(memInfo + sizeof(RecordGlobalHead) + sizeof(RecordBlockHead) +
+            blockHeadOffset, hostMems.size() * sizeof(HostMemoryInfo), static_cast<const void*>(hostMems.data()),
+            hostMems.size() * sizeof(HostMemoryInfo), ACL_MEMCPY_HOST_TO_DEVICE);
+        if (error != ACL_ERROR_NONE) {
+            ERROR_LOG("init block: %ld host malloc mem to record block head error: %d", blockIdx, error);
+            return false;
+        }
+    }
+
+    /// 4. 初始化simtRecordHead
+    int16_t checkBlockId = recordGlobalHead.checkParms.checkBlockId;
+    if (checkBlockId == CHECK_ALL_BLOCK || IsTargetBlockIdx(checkBlockId, blockIdx)) {
+        uint64_t allThreadSize = GetAllThreadSize(recordGlobalHead);
+        error = aclrtMemsetImplOrigin(memInfo + sizeof(RecordGlobalHead) + blockHeadOffset +
+            recordGlobalHead.simtInfo.offset, allThreadSize, 0x00, allThreadSize);
+        if (error != ACL_ERROR_NONE) {
+            ERROR_LOG("init memset simt record block head error: %d", error);
+            return false;
+        }
+    }
+    return true;
+}
+
+bool InitRecordHeaders(RecordGlobalHead &recordGlobalHead, uint8_t *memInfo, uint32_t hostMemoryNum)
+{
+    aclError error;
+    auto &devMemManager = DevMemManager::Instance();
+
+    // 1. 初始化 RecordGlobalHead
+    error = aclrtMemcpyImplOrigin(memInfo, sizeof(recordGlobalHead),
+                                  static_cast<const void*>(&recordGlobalHead),
+                                  sizeof(recordGlobalHead), ACL_MEMCPY_HOST_TO_DEVICE);
+    if (error != ACL_ERROR_NONE) {
+        ERROR_LOG("init memcpy record global head error: %d", error);
+        devMemManager.Free();
+        return false;
+    }
+
+    RecordBlockHead recordBlockHead{};
+    recordBlockHead.registers.paraBase.size = KernelContext::Instance().GetArgsSize();
+    recordBlockHead.hostMemoryNum = hostMemoryNum;
+    uint64_t blockHeadOffset = 0UL;
+    std::vector<HostMemoryInfo> hostMems = CopyExtraMallocToHostMemory();
+
+    for (size_t blockIdx = 0; blockIdx < recordGlobalHead.kernelInfo.totalBlockDim; ++blockIdx) {
+        // 2. 初始化每个核的 RecordBlockHead
+        DEBUG_LOG("blockHeadOffset=%lu", (uint64_t)blockHeadOffset);
+        recordBlockHead.hostMemoryInfoPtr = hostMemoryNum > 0 ?
+            reinterpret_cast<HostMemoryInfo *>(memInfo + sizeof(RecordGlobalHead) + blockHeadOffset +
+                sizeof(RecordBlockHead)) : nullptr;
+        error = aclrtMemcpyImplOrigin(memInfo + sizeof(RecordGlobalHead) + blockHeadOffset,
+            sizeof(RecordBlockHead), static_cast<const void*>(&recordBlockHead),
+            sizeof(RecordBlockHead), ACL_MEMCPY_HOST_TO_DEVICE);
+        if (error != ACL_ERROR_NONE) {
+            ERROR_LOG("init memcpy simd record block head error: %d", error);
+            devMemManager.Free();
+            return false;
+        }
+
+        if (!InitSimtBlockInfo(recordGlobalHead, memInfo, blockIdx, blockHeadOffset)) {
+            devMemManager.Free();
+            return false;
+        }
+
+        // 初始化shadow memory
+        if (recordGlobalHead.supportSimt) {
+            uint64_t shadowMemorySize = recordGlobalHead.simtInfo.shadowMemoryByteSize;
+            uint64_t shadowMemoryOffset = recordGlobalHead.simtInfo.shadowMemoryOffset;
+
+            uint8_t *shadowMemoryHeadAddr = memInfo + sizeof(RecordGlobalHead) + blockHeadOffset + shadowMemoryOffset;
+
+            DEBUG_LOG("ShadowMemoryHeapHead on 0x%lx", reinterpret_cast<uint64_t>(shadowMemoryHeadAddr));
+            error = aclrtMemsetImplOrigin(shadowMemoryHeadAddr, shadowMemorySize, 0x00, shadowMemorySize);
+            if (error != ACL_ERROR_NONE) {
+                ERROR_LOG("init memset 0 to shadow memory heap error: %d", error);
+                return false;
+            }
+
+            ShadowMemoryHeapHead smHeapHead;
+            smHeapHead.startAddr = (uint64_t)shadowMemoryHeadAddr + sizeof(ShadowMemoryHeapHead);
+            smHeapHead.size = shadowMemorySize > sizeof(ShadowMemoryHeapHead) ?
+                shadowMemorySize - sizeof(ShadowMemoryHeapHead) : 0U;
+            smHeapHead.current = smHeapHead.startAddr;
+            smHeapHead.lock = 0U;
+
+            DEBUG_LOG("ShadowMemoryHeapHead startAddr=0x%lx size=0x%lx current=0x%lx lock=0x%lx",
+                smHeapHead.startAddr, smHeapHead.size, smHeapHead.current, smHeapHead.lock);
+
+            error = aclrtMemcpyImplOrigin(shadowMemoryHeadAddr,
+                sizeof(ShadowMemoryHeapHead), static_cast<const void*>(&smHeapHead),
+                sizeof(ShadowMemoryHeapHead), ACL_MEMCPY_HOST_TO_DEVICE);
+            if (error != ACL_ERROR_NONE) {
+                ERROR_LOG("init shadow memory heap head error: %d", error);
+                return false;
+            }
+        }
+
+        UpdateBlockHeadOffset(recordGlobalHead.checkParms, blockIdx, hostMemoryNum, blockHeadOffset);
+    }
+    return true;
+}
+
+inline bool InAclNewLaunchCallStack()
+{
+    return
+        HijackedLayerManager::Instance().InCallStack("aclrtLaunchKernelImpl") ||
+        HijackedLayerManager::Instance().InCallStack("aclrtLaunchKernelWithConfigImpl") ||
+        HijackedLayerManager::Instance().InCallStack("aclrtLaunchKernelWithHostArgsImpl");
+}
+
+} // namespace [Dummy]
+ 
+std::string GetArchName(KernelType kernelType, const std::string &socVersion)
+{
+    if (socVersion.find("Ascend910B") != std::string::npos ||
+        socVersion.find("Ascend910_93") != std::string::npos) {
+        switch (kernelType) {
+            case KernelType::AIVEC:
+                return "dav-c220-vec";
+            case KernelType::AICUBE:
+                return "dav-c220-cube";
+            case KernelType::MIX:
+                return "dav-c220";
+            default:
+                return "";
+        }
+    }
+
+    if (socVersion.find("Ascend310P") != std::string::npos) {
+        switch (kernelType) {
+            case KernelType::AIVEC:
+                return "dav-m200-vec";
+            case KernelType::MIX:
+                return "dav-m200";
+            default:
+                return "";
+        }
+    }
+
+    if (socVersion.find("Ascend910_95") != std::string::npos) {
+        switch (kernelType) {
+            case KernelType::AIVEC:
+                return "dav-c310-vec";
+            case KernelType::AICUBE:
+                return "dav-c310-cube";
+            case KernelType::MIX:
+                return "dav-c310";
+            default:
+                return "";
+        }
+    }
+    return "";
+}
+
+std::string GetCurrentArchName()
+{
+    KernelType kernelType = GetCurrentKernelType();
+    std::string socVersion = DeviceContext::Local().GetSocVersion();
+    return GetArchName(kernelType, socVersion);
+}
+
+uint8_t *__sanitizer_init(uint64_t blockDim)
+{
+    if (!CheckBlockDimValid(blockDim)) {
+        return nullptr;
+    }
+
+    KernelType kernelType{};
+    if (InAclNewLaunchCallStack()) {
+        LaunchContextSP launchCtx = LaunchManager::Local().GetLastContext();
+        if (launchCtx) {
+            const auto &funcContext = launchCtx->GetFuncContext();
+            kernelType = GetCurrentKernelType(funcContext->GetRegisterContext()->GetMagic(),
+                funcContext->GetKernelName());
+        }
+    } else {
+        kernelType = GetCurrentKernelType();
+    }
+
+    uint32_t hostMemoryNum = MemoryManage::Instance().GetMallocCount();
+    RecordGlobalHead recordGlobalHead{};
+    if (!InitGlobalHead(recordGlobalHead, blockDim, kernelType, hostMemoryNum)) {
+        return nullptr;
+    }
+
+    uint64_t totalBlockDim = recordGlobalHead.kernelInfo.totalBlockDim;
+    DEBUG_LOG("sanitizer init with blockDim: %lu, totalBlockDim: %lu", blockDim, totalBlockDim);
+    auto &devMemManager = DevMemManager::Instance();
+    uint64_t memSize = recordGlobalHead.kernelInfo.totalCacheSize * MB_TO_BYTES + sizeof(RecordGlobalHead) +
+        totalBlockDim * GetRecordHeadSize(hostMemoryNum);
+    void *memPtr = nullptr;
+    aclError error = devMemManager.MallocMemory(&memPtr, memSize);
+    if (error != ACL_ERROR_NONE) {
+        ERROR_LOG("init malloc memInfo error: %d", error);
+        return nullptr;
+    }
+
+    auto *memInfo = static_cast<uint8_t*>(memPtr);
+
+    if (!InitRecordHeaders(recordGlobalHead, memInfo, hostMemoryNum)) {
+        return nullptr;
+    }
+
+    if (devMemManager.IsMemoryInit()) {
+        DEBUG_LOG("memInfo is already initialized, skip init");
+        return memInfo;
+    }
+
+    devMemManager.SetMemoryInitFlag(true);
+    return memInfo;
+}
+
+void __sanitizer_finalize(uint8_t *memInfo, uint64_t blockDim)
+{
+    auto &devMemManager = DevMemManager::Instance();
+    if (!devMemManager.IsMemoryInit() || !CheckBlockDimValid(blockDim)) {return; }
+
+    uint64_t blockSize = SanitizerConfigManager::Instance().GetConfig().cacheSize * MB_TO_BYTES +
+        sizeof(RecordGlobalHead) + sizeof(RecordBlockHead);
+    auto *memInfoHost = new uint8_t[blockSize];
+    ReportMemInfo(memInfoHost, memInfo, blockSize, blockDim);
+
+    delete[] memInfoHost;
+    memInfoHost = nullptr;
+    devMemManager.SetMemoryInitFlag(false);
+}
+
+KernelType GetCurrentKernelType()
+{
+    uint64_t launchId = KernelContext::Instance().GetLaunchId();
+    uint64_t registerId = KernelContext::Instance().GetRegisterId(launchId);
+    KernelType kernelType {};
+    KernelContext::RegisterEvent registerEvent;
+    KernelContext::LaunchEvent launchEvnet{};
+    if (KernelContext::Instance().GetRegisterEvent(registerId, registerEvent) &&
+        KernelContext::Instance().GetLaunchEvent(launchId, launchEvnet)) {
+        kernelType = GetCurrentKernelType(registerEvent.bin.magic, launchEvnet.kernelName);
+    }
+    return kernelType;
+}
+
+KernelType GetCurrentKernelType(uint32_t magic, const std::string &kernelName)
+{
+    auto kernelType = MagicToKernelType(magic);
+    // 当 magic 为 RT_DEV_BINARY_MAGIC_ELF，但是 kernel 本身没有 mix 后缀时，无法
+    // 直接推定算子的类型，需要做一些特殊处理
+    if (kernelName.find("_mix_aic") == kernelName.npos &&
+        kernelName.find("_mix_aiv") == kernelName.npos &&
+        kernelType == KernelType::MIX) {
+        // runtime 老接口与之前保持兼容，直接默认为 cube
+        if (!InAclNewLaunchCallStack()) {
+            return KernelType::AICUBE;
+        }
+
+        // acl 新接口场景下通过 acl 接口获取 kernelType
+        auto lastLaunchContext = LaunchManager::Local().GetLastContext();
+        if (!lastLaunchContext) {
+            ERROR_LOG("Get last launch context failed");
+            return KernelType::INVALID;
+        }
+
+        kernelType = lastLaunchContext->GetFuncContext()->GetKernelType(kernelName);
+        if (kernelType == KernelType::AICPU) {
+            DEBUG_LOG("kernel name: %s is aicpu function", kernelName.c_str());
+        } else if (kernelType == KernelType::INVALID) {
+            WARN_LOG("kernel name: %s is get kernel type failed, use default CUBE type", kernelName.c_str());
+            kernelType = KernelType::AICUBE;
+        }
+    }
+    return kernelType;
+}
+
+bool SkipSanitizer(std::string const &kernelName)
+{
+    // 使用工具侧传过来的 KernelName 判断是否需要跳过当前的 kernel 检测
+    SanitizerConfig const &sanitizerConfig = SanitizerConfigManager::Instance().GetConfig();
+    KernelMatcher::Config matchConfig {};
+    matchConfig.kernelName = sanitizerConfig.kernelName;
+    bool skipSanitizer = !KernelMatcher(matchConfig).Match(0, kernelName);
+    if (skipSanitizer) {
+        DEBUG_LOG("skip sanitizer for kernel name: %s", kernelName.c_str());
+    } else {
+        DEBUG_LOG("do sanitizer for kernel name: %s", kernelName.c_str());
+    }
+    return skipSanitizer;
+}
+
+std::string GetTargetArchName(const FuncContextSP &funcCtx)
+{
+    uint32_t magic = funcCtx->GetRegisterContext()->GetMagic();
+    auto kernelType = GetCurrentKernelType(magic, funcCtx->GetKernelName());
+    const auto &socVersion = DeviceContext::Local().GetSocVersion();
+    return GetArchName(kernelType, socVersion);
+}
+
+void ReportKernelSummary(uint64_t launchId)
+{
+    KernelContext::LaunchEvent event;
+    if (!KernelContext::Instance().GetLaunchEvent(launchId, event)) {
+        return;
+    }
+    uint64_t registerId = KernelContext::Instance().GetRegisterId(launchId);
+    KernelContext::RegisterEvent registerEvent;
+    if (!KernelContext::Instance().GetRegisterEvent(registerId, registerEvent)) {
+        return;
+    }
+    KernelSummary kernelSummary;
+    kernelSummary.pcStartAddr = event.pcStartAddr;
+    kernelSummary.blockDim = event.blockDim;
+    kernelSummary.kernelType = GetCurrentKernelType();
+    kernelSummary.isKernelWithDBI = registerEvent.isKernelWithDBI;
+    kernelSummary.hasDebugLine = registerEvent.hasDebugLine;
+    std::size_t length = event.kernelName.copy(kernelSummary.kernelName, sizeof(kernelSummary.kernelName) - 1);
+    kernelSummary.kernelName[length] = '\0';
+
+    PacketHead head = { PacketType::KERNEL_SUMMARY };
+    LocalDevice::Local().Notify(Serialize(head, kernelSummary));
+}
+
+void ReportKernelSummary(LaunchContextSP launchCtx)
+{
+    if (launchCtx == nullptr) {
+        return;
+    }
+
+    FuncContextSP funcCtx = launchCtx->GetDBIFuncCtx();
+    if (funcCtx == nullptr) {
+        funcCtx = launchCtx->GetFuncContext();
+    }
+    RegisterContextSP regCtx = funcCtx->GetRegisterContext();
+
+    KernelSummary kernelSummary;
+    kernelSummary.kernelType = GetCurrentKernelType(regCtx->GetMagic(), funcCtx->GetKernelName());
+    kernelSummary.pcStartAddr = funcCtx->GetStartPC();
+    kernelSummary.blockDim = launchCtx->GetLaunchParam().blockDim;
+    kernelSummary.isKernelWithDBI = !regCtx->HasStaticStub();
+    kernelSummary.hasDebugLine = regCtx->HasDebugLine();
+    std::size_t length = funcCtx->GetKernelName().copy(kernelSummary.kernelName, sizeof(kernelSummary.kernelName) - 1);
+    kernelSummary.kernelName[length] = '\0';
+
+    PacketHead head = { PacketType::KERNEL_SUMMARY };
+    LocalDevice::Local().Notify(Serialize(head, kernelSummary));
+}

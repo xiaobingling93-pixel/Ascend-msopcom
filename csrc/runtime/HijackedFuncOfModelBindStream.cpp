@@ -1,0 +1,29 @@
+/* -------------------------------------------------------------------------
+ * This file is part of the MindStudio project.
+ * Copyright (c) 2025 Huawei Technologies Co.,Ltd.
+ *
+ * MindStudio is licensed under Mulan PSL v2.
+ * You can use this software according to the terms and conditions of the Mulan PSL v2.
+ * You may obtain a copy of Mulan PSL v2 at:
+ *
+ *          http://license.coscl.org.cn/MulanPSL2
+ *
+ * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
+ * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
+ * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+ * See the Mulan PSL v2 for more details.
+ * ------------------------------------------------------------------------- */
+
+
+#include "HijackedFunc.h"
+#include "RuntimeConfig.h"
+#include "inject_helpers/LaunchManager.h"
+
+HijackedFuncOfModelBindStream::HijackedFuncOfModelBindStream()
+    : HijackedFuncType(RuntimeLibName(), "rtModelBindStream") {}
+
+void HijackedFuncOfModelBindStream::Pre(rtModel_t mdl, rtStream_t stm, uint32_t flag)
+{
+    auto &streamInfo = LaunchManager::GetOrCreateStreamInfo(stm);
+    streamInfo.binded = true;
+}
