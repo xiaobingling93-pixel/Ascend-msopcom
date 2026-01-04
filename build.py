@@ -25,20 +25,10 @@ import argparse
 
 
 def exec_cmd(cmd):
-    result = subprocess.run(cmd, capture_output=False, text=True, timeout=3600)
+    result = subprocess.run(cmd, capture_output=False, text=True, timeout=36000)
     if result.returncode != 0:
         logging.error("execute command %s failed, please check the log", " ".join(cmd))
         sys.exit(result.returncode)
-
-
-def update_submodle(build_test):
-    logging.info("============ start download thirdparty code using git submodule ============")
-    if build_test:
-        exec_cmd(["git", "submodule", "update", "--init", "--recursive", "--depth=1", "--jobs=4"])
-    else:
-        # 只构建打包时，只需下载构建所需子仓即可
-        exec_cmd(["git", "submodule", "update", "--init", "--depth=1", "--jobs=4", "thirdparty/json"])
-    logging.info("============ download thirdparty code  done ============")
 
 
 def execute_build(build_path, cmake_cmd, make_cmd, install_cmd):
@@ -96,7 +86,9 @@ if __name__ == "__main__":
 
     # 解析入参是否为local，非local场景时按需更新代码；local场景不更新代码只使用本地代码
     if 'local' not in args.command:
-        update_submodle('test' in args.command)
+        from download_dependencies import update_submodule
+        update_submodule(args)
+
     # 执行构建
     execute_build(build_path, cmake_cmd, make_cmd, install_cmd)
     # 执行测试
