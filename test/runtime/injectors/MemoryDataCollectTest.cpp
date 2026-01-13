@@ -23,10 +23,10 @@
 
 #include "core/DomainSocket.h"
 #include "core/FuncSelector.h"
-#include "core/LocalDevice.h"
 #include "runtime.h"
 #include "mockcpp/mockcpp.hpp"
 #include "runtime/inject_helpers/KernelContext.h"
+#include "runtime/inject_helpers/LocalDevice.h"
 #define private public
 #include "runtime/inject_helpers/MemoryDataCollect.h"
 #undef private

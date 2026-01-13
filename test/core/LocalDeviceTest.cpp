@@ -17,9 +17,9 @@
 
 #include <thread>
 #include <gtest/gtest.h>
-#include "core/LocalDevice.h"
 #include "core/RemoteProcess.h"
 #include "mockcpp/mockcpp.hpp"
+#include "runtime/inject_helpers/LocalDevice.h"
 
 // 针对多进程间的信息交互，在UT中采用多线程进行模拟
 // 针对用例的设计，需要覆盖基础的接口

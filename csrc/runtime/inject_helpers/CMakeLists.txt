@@ -31,6 +31,7 @@ file(GLOB COMMON_SOURCE
     LaunchContext.cpp
     DeviceContext.cpp
     KernelMetaDataParser.cpp
+    LocalDevice.cpp
 )
 list(SORT COMMON_SOURCE)
 target_sources(msopprof_injection PUBLIC ${COMMON_SOURCE})

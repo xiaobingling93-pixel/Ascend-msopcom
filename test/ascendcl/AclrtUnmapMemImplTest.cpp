@@ -20,9 +20,9 @@
 #include "acl_rt_impl/HijackedFunc.h"
 #undef private
 #include "core/FuncSelector.h"
-#include "core/LocalDevice.h"
 #include "core/DomainSocket.h"
 #include "acl_rt_impl/AscendclImplOrigin.h"
+#include "runtime/inject_helpers/LocalDevice.h"
 #include "mockcpp/mockcpp.hpp"
 
 TEST(aclrtUnmapMemImpl, sanitizer_call_pre_function_with_unmap_mem_args_expect_return)

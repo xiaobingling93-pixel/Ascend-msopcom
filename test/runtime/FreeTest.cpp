@@ -21,9 +21,9 @@
 #undef private
 #include "core/DomainSocket.h"
 #include "core/FuncSelector.h"
-#include "core/LocalDevice.h"
 #include "mockcpp/mockcpp.hpp"
 #include "runtime/RuntimeOrigin.h"
+#include "runtime/inject_helpers/LocalDevice.h"
 
 TEST(rtFree, sanitizer_call_pre_function_with_free_args_expect_return)
 {

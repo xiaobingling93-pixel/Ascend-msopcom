@@ -21,8 +21,8 @@
 #include <string>
 #include <mutex>
 #include <unordered_map>
-#include "Communication.h"
-#include "LocalProcess.h"
+#include "core/Communication.h"
+#include "core/LocalProcess.h"
 
 class LocalDevice : public LocalProcess {
 public:

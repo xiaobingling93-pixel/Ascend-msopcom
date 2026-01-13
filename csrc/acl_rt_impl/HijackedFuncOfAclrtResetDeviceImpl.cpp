@@ -19,12 +19,12 @@
 #include "HijackedFunc.h"
 #include "core/FuncSelector.h"
 #include "core/HijackedFuncTemplate.h"
-#include "core/LocalDevice.h"
 #include "acl.h"
 #include "acl_rt_impl/AscendclImplOrigin.h"
 #include "runtime/inject_helpers/DevMemManager.h"
 #include "runtime/inject_helpers/KernelContext.h"
 #include "runtime/inject_helpers/DeviceContext.h"
+#include "runtime/inject_helpers/LocalDevice.h"
 #include "utils/InjectLogger.h"
 
 HijackedFuncOfAclrtResetDeviceImpl::HijackedFuncOfAclrtResetDeviceImpl()

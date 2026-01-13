@@ -18,10 +18,10 @@
 
 #include "HijackedFunc.h"
 #include "core/FuncSelector.h"
-#include "core/LocalDevice.h"
 #include "utils/Protocol.h"
 #include "utils/Serialize.h"
 #include "acl_rt_impl/AscendclImplOrigin.h"
+#include "runtime/inject_helpers/LocalDevice.h"
 #include "runtime/inject_helpers/MemoryContext.h"
 #include "runtime/inject_helpers/ProfConfig.h"
 #include "runtime/inject_helpers/KernelContext.h"

@@ -17,7 +17,6 @@
 
 #include "HijackedFunc.h"
 #include "core/FuncSelector.h"
-#include "core/LocalDevice.h"
 #include "runtime/inject_helpers/ArgsHandleContext.h"
 #include "runtime/inject_helpers/ArgsManager.h"
 #include "runtime/inject_helpers/DevMemManager.h"
@@ -25,6 +24,7 @@
 #include "runtime/inject_helpers/InstrReport.h"
 #include "runtime/inject_helpers/KernelReplacement.h"
 #include "runtime/inject_helpers/LaunchManager.h"
+#include "runtime/inject_helpers/LocalDevice.h"
 #include "runtime/inject_helpers/MemoryDataCollect.h"
 #include "runtime/inject_helpers/ProfConfig.h"
 #include "runtime/inject_helpers/InstrReport.h"

@@ -20,7 +20,6 @@
 #include "utils/InjectLogger.h"
 #include "acl_rt_impl/AscendclImplOrigin.h"
 #include "core/FuncSelector.h"
-#include "core/LocalDevice.h"
 #include "utils/Protocol.h"
 #include "utils/Serialize.h"
 #include "runtime/inject_helpers/ProfConfig.h"
@@ -37,6 +36,7 @@
 #include "runtime/inject_helpers/BBCountDumper.h"
 #include "runtime/inject_helpers/DBITask.h"
 #include "runtime/inject_helpers/LaunchArgs.h"
+#include "runtime/inject_helpers/LocalDevice.h"
 
 HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl::HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl()
     : HijackedFuncType("acl_rt_impl", "aclrtLaunchKernelWithHostArgsImpl") {}

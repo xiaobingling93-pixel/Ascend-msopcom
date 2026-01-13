@@ -19,13 +19,13 @@
 #include "HijackedFunc.h"
 #include "RuntimeConfig.h"
 #include "core/FuncSelector.h"
-#include "core/LocalDevice.h"
 #include "utils/Protocol.h"
 #include "utils/Serialize.h"
 #include "runtime/RuntimeOrigin.h"
 #include "inject_helpers/MemoryContext.h"
 #include "inject_helpers/ProfConfig.h"
 #include "inject_helpers/KernelContext.h"
+#include "runtime/inject_helpers/LocalDevice.h"
 
 HijackedFuncOfMapMem::HijackedFuncOfMapMem()
     : HijackedFuncType(RuntimeLibName(), "rtMapMem") {}
