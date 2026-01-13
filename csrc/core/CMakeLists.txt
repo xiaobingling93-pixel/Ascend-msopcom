@@ -4,7 +4,6 @@ file(GLOB SOURCE
     FuncSelector.cpp
     FunctionLoader.cpp
     LocalProcess.cpp
-    LocalDevice.cpp
     RemoteProcess.cpp
     DomainSocket.cpp
     HijackedLayerManager.cpp

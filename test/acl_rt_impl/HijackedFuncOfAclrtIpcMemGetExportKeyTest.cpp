@@ -26,7 +26,7 @@
 
 #include "core/FuncSelector.h"
 #include "core/DomainSocket.h"
-#include "core/LocalDevice.h"
+#include "runtime/inject_helpers/LocalDevice.h"
 
 class HijackedFuncOfAclrtIpcMemGetExportKey : public testing::Test {
     void TearDown() override

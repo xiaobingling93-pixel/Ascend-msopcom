@@ -24,10 +24,10 @@
 
 #include "runtime/RuntimeConfig.h"
 #include "core/FuncSelector.h"
-#include "core/LocalDevice.h"
 #include "utils/Protocol.h"
 #include "utils/Serialize.h"
 #include "runtime/RuntimeOrigin.h"
+#include "runtime/inject_helpers/LocalDevice.h"
 
 
 TEST(HijackedFuncOfMapMem, post)

@@ -20,9 +20,9 @@
 #include "runtime/HijackedFunc.h"
 #undef private
 #include "core/FuncSelector.h"
-#include "core/LocalDevice.h"
 #include "core/DomainSocket.h"
 #include "runtime/RuntimeOrigin.h"
+#include "runtime/inject_helpers/LocalDevice.h"
 #include "mockcpp/mockcpp.hpp"
 
 TEST(rtMemset, sanitizer_call_pre_function_with_memset_args_expect_return)

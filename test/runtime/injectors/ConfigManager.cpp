@@ -22,9 +22,7 @@
 #include "core/Communication.h"
 #include "runtime/inject_helpers/ConfigManager.h"
 #include "runtime/inject_helpers/ThreadContext.h"
-#define private public
-#include "core/LocalDevice.h"
-#undef private
+#include "runtime/inject_helpers/LocalDevice.h"
 #include "helper/MockHelper.h"
 #include "mockcpp/mockcpp.hpp"
 #include "utils/Serialize.h"
@@ -67,7 +65,7 @@ TEST(ConfigManagerTest, get_equal_config_and_unequal_config_with_different_devID
     // 需要确保g_curDevId的LocalDevice未被创建
     int32_t devId = g_curDevId;
     ThreadContext::Instance().SetDeviceId(g_curDevId);
-    Client *client = LocalDevice::GetInstance(g_curDevId).client_;
+    LocalDevice::GetInstance(g_curDevId);
 
     MOCKER(&aclrtGetDeviceImplOrigin).stubs().will(invoke(&GetDeviceOriginStub));
     SanitizerConfig config1;
@@ -93,7 +91,7 @@ TEST(ConfigManagerTest, get_equal_config_and_unequal_config_with_different_devID
 
     g_curDevId += 1;
     ThreadContext::Instance().SetDeviceId(g_curDevId);
-    client = LocalDevice::GetInstance(g_curDevId).client_;
+    LocalDevice::GetInstance(g_curDevId);
     config1.defaultCheck = true;
     MockHelper::Instance().SetMsg(Serialize(config1));
     auto gotConfig2 = SanitizerConfigManager::Instance().GetConfig();
@@ -115,7 +113,7 @@ TEST(ConfigManagerTest, get_non_config_content_expect_error_log)
     // 需要确保g_curDevId的LocalDevice未被创建
     g_curDevId = 12;
     ThreadContext::Instance().SetDeviceId(g_curDevId);
-    Client *client = LocalDevice::GetInstance(g_curDevId).client_;
+    LocalDevice::GetInstance(g_curDevId);
     MOCKER(&aclrtGetDeviceImplOrigin).stubs().will(invoke(&GetDeviceOriginStub));
     SanitizerConfig config1;
     // 收到多个config

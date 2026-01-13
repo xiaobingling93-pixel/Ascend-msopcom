@@ -21,10 +21,10 @@
 #include "utils/Future.h"
 #include "utils/Protocol.h"
 #include "utils/Serialize.h"
-#include "core/LocalDevice.h"
 #include "runtime/RuntimeOrigin.h"
 #include "core/BinaryInstrumentation.h"
 #include "runtime/inject_helpers/KernelMatcher.h"
+#include "runtime/inject_helpers/LocalDevice.h"
 #include "runtime/inject_helpers/ThreadContext.h"
 #include "runtime/inject_helpers/DBITask.h"
 

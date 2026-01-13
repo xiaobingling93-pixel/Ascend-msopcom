@@ -24,9 +24,9 @@
 #undef private
 #undef protected
 #include "runtime/inject_helpers/ArgsManager.h"
+#include "runtime/inject_helpers/LocalDevice.h"
 #include "core/FuncSelector.h"
 #include "core/DomainSocket.h"
-#include "core/LocalDevice.h"
 
 // 测试用例
 class HijackedFuncOfAclrtKernelArgsInitByUserMemImplTest : public ::testing::Test {

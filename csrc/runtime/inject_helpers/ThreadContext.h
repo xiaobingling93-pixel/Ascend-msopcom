@@ -18,7 +18,9 @@
 
 #include <cstdint>
 
+#include "acl_rt_impl/AscendclImplOrigin.h"
 #include "utils/Singleton.h"
+#include "utils/InjectLogger.h"
 
 // 保存线程到设备逻辑 id 的映射关系
 class ThreadContext : public Singleton<ThreadContext, true> {
@@ -26,7 +28,13 @@ public:
     friend class Singleton<ThreadContext, true>;
 
     void SetDeviceId(int32_t deviceId) { deviceId_ = deviceId; }
-    int32_t GetDeviceId() { return deviceId_; }
+    int32_t GetDeviceId() {
+        auto ret = aclrtGetDeviceImplOrigin(&deviceId_);
+        if (ret != ACL_ERROR_NONE) {
+            ERROR_LOG("Get device id failed. error code: %d", ret);
+        }
+        return deviceId_;
+    }
 
 private:
     int32_t deviceId_{};

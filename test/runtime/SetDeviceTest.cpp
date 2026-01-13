@@ -23,11 +23,11 @@
 #undef private
 #undef protected
 #include "core/FuncSelector.h"
-#include "core/LocalDevice.h"
 #include "core/DomainSocket.h"
 #include "runtime/RuntimeOrigin.h"
 #include "mockcpp/mockcpp.hpp"
 #include "runtime/inject_helpers/KernelContext.h"
+#include "runtime/inject_helpers/LocalDevice.h"
 
 TEST(rtSetDevice, sanitizer_call_pre_function_with_devid_expect_save_correct_devid)
 {
