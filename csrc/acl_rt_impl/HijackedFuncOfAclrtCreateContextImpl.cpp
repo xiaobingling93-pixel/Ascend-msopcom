@@ -24,7 +24,7 @@
 #include "runtime/inject_helpers/ProfConfig.h"
 
 HijackedFuncOfAclrtCreateContextImpl::HijackedFuncOfAclrtCreateContextImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtCreateContextImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtCreateContextImpl") {}
 
 aclError HijackedFuncOfAclrtCreateContextImpl::Call(aclrtContext *context, int32_t deviceId)
 {

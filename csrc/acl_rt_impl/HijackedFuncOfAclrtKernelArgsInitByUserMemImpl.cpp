@@ -20,7 +20,7 @@
 #include "runtime/inject_helpers/ArgsManager.h"
 
 HijackedFuncOfAclrtKernelArgsInitByUserMemImpl::HijackedFuncOfAclrtKernelArgsInitByUserMemImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtKernelArgsInitByUserMemImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtKernelArgsInitByUserMemImpl") {}
 
 void HijackedFuncOfAclrtKernelArgsInitByUserMemImpl::Pre(aclrtFuncHandle funcHandle, aclrtArgsHandle argsHandle,
                                                          void *userHostMem, size_t actualArgsSize)

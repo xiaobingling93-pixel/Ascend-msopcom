@@ -23,7 +23,7 @@ namespace {
     constexpr uint32_t MAX_DEVICE_CNT = 16U;
 }
 HijackedFuncOfAclrtGetDeviceCountImpl::HijackedFuncOfAclrtGetDeviceCountImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtGetDeviceCountImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtGetDeviceCountImpl") {}
 
 aclError HijackedFuncOfAclrtGetDeviceCountImpl::Call(uint32_t *count)
 {

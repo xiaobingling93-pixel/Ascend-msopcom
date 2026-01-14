@@ -23,6 +23,7 @@
 #include "runtime/inject_helpers/FuncContext.h"
 #include "runtime/inject_helpers/LaunchContext.h"
 #include "runtime/inject_helpers/ProfDataCollect.h"
+#include "acl_rt_impl/AclRuntimeConfig.h"
 
 class AclErrorTag;
  

@@ -21,7 +21,7 @@
 #include "runtime/inject_helpers/ArgsHandleContext.h"
 
 HijackedFuncOfAclrtKernelArgsGetPlaceHolderBufferImpl::HijackedFuncOfAclrtKernelArgsGetPlaceHolderBufferImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtKernelArgsGetPlaceHolderBufferImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtKernelArgsGetPlaceHolderBufferImpl") {}
 
 void HijackedFuncOfAclrtKernelArgsGetPlaceHolderBufferImpl::Pre(
     aclrtArgsHandle argsHandle, aclrtParamHandle paramHandle,

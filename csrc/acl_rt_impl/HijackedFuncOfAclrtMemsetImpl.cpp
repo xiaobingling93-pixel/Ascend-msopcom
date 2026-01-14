@@ -24,7 +24,7 @@
 #include "utils/Serialize.h"
 
 HijackedFuncOfAclrtMemsetImpl::HijackedFuncOfAclrtMemsetImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtMemsetImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtMemsetImpl") {}
 
 void HijackedFuncOfAclrtMemsetImpl::Pre(void *devPtr, size_t maxCount, int32_t value, size_t count)
 {

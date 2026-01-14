@@ -26,7 +26,7 @@
 #include "utils/Ustring.h"
 
 HijackedFuncOfAclrtIpcMemGetExportKeyImpl::HijackedFuncOfAclrtIpcMemGetExportKeyImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtIpcMemGetExportKeyImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtIpcMemGetExportKeyImpl") {}
 
 void HijackedFuncOfAclrtIpcMemGetExportKeyImpl::Pre(void *devPtr, size_t size, char *key,
                                                     size_t len, uint64_t flag)

@@ -20,7 +20,7 @@
 #include "runtime/inject_helpers/LaunchManager.h"
 
 HijackedFuncOfAclmdlRICaptureEndImpl::HijackedFuncOfAclmdlRICaptureEndImpl()
-    : HijackedFuncType("acl_rt_impl", "aclmdlRICaptureEndImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclmdlRICaptureEndImpl") {}
 
 void HijackedFuncOfAclmdlRICaptureEndImpl::Pre(aclrtStream stream, aclmdlRI *modeRI)
 {

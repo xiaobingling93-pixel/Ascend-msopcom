@@ -27,7 +27,7 @@
 #include "runtime/inject_helpers/KernelContext.h"
 
 HijackedFuncOfAclrtMapMemImpl::HijackedFuncOfAclrtMapMemImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtMapMemImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtMapMemImpl") {}
 
 void HijackedFuncOfAclrtMapMemImpl::Pre(void *virPtr, size_t size, size_t offset,
                                         aclrtDrvMemHandle handle, uint64_t flags)

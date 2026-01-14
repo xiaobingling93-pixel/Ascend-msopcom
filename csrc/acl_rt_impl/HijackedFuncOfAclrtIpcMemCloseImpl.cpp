@@ -28,7 +28,7 @@
 #include "utils/Ustring.h"
 
 HijackedFuncOfAclrtIpcMemCloseImpl::HijackedFuncOfAclrtIpcMemCloseImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtIpcMemCloseImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtIpcMemCloseImpl") {}
 
 void HijackedFuncOfAclrtIpcMemCloseImpl::Pre(const char *key)
 {

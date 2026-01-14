@@ -21,7 +21,7 @@
 #include "utils/InjectLogger.h"
 
 HijackedFuncOfAclrtBinaryGetFunctionImpl::HijackedFuncOfAclrtBinaryGetFunctionImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtBinaryGetFunctionImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtBinaryGetFunctionImpl") {}
 
 void HijackedFuncOfAclrtBinaryGetFunctionImpl::Pre(
     const aclrtBinHandle binHandle, const char *kernelName, aclrtFuncHandle *funcHandle

@@ -23,7 +23,7 @@
 #include "utils/InjectLogger.h"
 
 HijackedFuncOfAclrtBinaryLoadFromDataImpl::HijackedFuncOfAclrtBinaryLoadFromDataImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtBinaryLoadFromDataImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtBinaryLoadFromDataImpl") {}
 
 void HijackedFuncOfAclrtBinaryLoadFromDataImpl::Pre(const void *data, size_t length,
                                                     const aclrtBinaryLoadOptions *options, aclrtBinHandle *binHandle)

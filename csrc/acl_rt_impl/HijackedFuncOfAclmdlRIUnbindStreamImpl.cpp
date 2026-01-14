@@ -20,7 +20,7 @@
 #include "runtime/inject_helpers/LaunchManager.h"
 
 HijackedFuncOfAclmdlRIUnbindStreamImpl::HijackedFuncOfAclmdlRIUnbindStreamImpl()
-    : HijackedFuncType("acl_rt_impl", "aclmdlRIUnbindStreamImpl") { }
+    : HijackedFuncType(AclRuntimeLibName(), "aclmdlRIUnbindStreamImpl") { }
 
 void HijackedFuncOfAclmdlRIUnbindStreamImpl::Pre(aclmdlRI modelRI, aclrtStream stream)
 {

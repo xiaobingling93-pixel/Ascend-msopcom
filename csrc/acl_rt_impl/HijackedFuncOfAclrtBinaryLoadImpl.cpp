@@ -23,7 +23,7 @@
 #include "runtime/inject_helpers/ProfConfig.h"
 
 HijackedFuncOfAclrtBinaryLoadImpl::HijackedFuncOfAclrtBinaryLoadImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtBinaryLoadImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtBinaryLoadImpl") {}
 
 void HijackedFuncOfAclrtBinaryLoadImpl::Pre(const aclrtBinary binary, aclrtBinHandle *binHandle)
 {

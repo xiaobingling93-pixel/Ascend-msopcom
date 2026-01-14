@@ -28,7 +28,7 @@
 #include "runtime/inject_helpers/MemoryContext.h"
 
 HijackedFuncOfAclrtMallocWithCfgImpl::HijackedFuncOfAclrtMallocWithCfgImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtMallocWithCfgImpl"), devPtr_{nullptr}, size_{} {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtMallocWithCfgImpl"), devPtr_{nullptr}, size_{} {}
 
 void HijackedFuncOfAclrtMallocWithCfgImpl::Pre(void **devPtr, size_t size, aclrtMemMallocPolicy policy, aclrtMallocConfig *cfg)
 {
