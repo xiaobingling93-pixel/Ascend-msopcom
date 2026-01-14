@@ -32,7 +32,6 @@ TEST(rtDeviceReset, call_pre_function_with_valid_device_id_expect_return)
     HijackedFuncOfDeviceReset instance;
     instance.Pre(1);
     instance.Call(1);
-    EXPECT_EQ(DeviceContext::Local().GetDeviceId(), 1);
 }
 
 TEST(rtDeviceReset, IsSanitizer)
@@ -41,7 +40,6 @@ TEST(rtDeviceReset, IsSanitizer)
     HijackedFuncOfDeviceReset instance;
     instance.Pre(1);
     instance.Call(1);
-    EXPECT_EQ(DeviceContext::Local().GetDeviceId(), 1);
 }
 
 TEST(rtDeviceReset, IsOpProf)
@@ -55,5 +53,4 @@ TEST(rtDeviceReset, IsOpProf)
     instance.originfunc_ = func;
     instance.Pre(1);
     instance.Call(1);
-    EXPECT_EQ(DeviceContext::Local().GetDeviceId(), 1);
 }

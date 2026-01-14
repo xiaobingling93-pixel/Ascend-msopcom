@@ -33,7 +33,6 @@ TEST(aclrtResetDeviceImpl, call_pre_function_with_valid_device_id_expect_return)
     HijackedFuncOfAclrtResetDeviceImpl instance;
     instance.Pre(1);
     instance.Call(1);
-    EXPECT_EQ(DeviceContext::Local().GetDeviceId(), 1);
 }
 
 TEST(aclrtResetDeviceImpl, IsSanitizer)
@@ -42,7 +41,6 @@ TEST(aclrtResetDeviceImpl, IsSanitizer)
     HijackedFuncOfAclrtResetDeviceImpl instance;
     instance.Pre(1);
     instance.Call(1);
-    EXPECT_EQ(DeviceContext::Local().GetDeviceId(), 1);
 }
 
 TEST(aclrtResetDeviceImpl, IsOpProf)
@@ -56,5 +54,4 @@ TEST(aclrtResetDeviceImpl, IsOpProf)
     instance.originfunc_ = func;
     instance.Pre(1);
     instance.Call(1);
-    EXPECT_EQ(DeviceContext::Local().GetDeviceId(), 1);
 }

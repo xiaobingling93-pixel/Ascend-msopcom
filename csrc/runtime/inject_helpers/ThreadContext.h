@@ -31,7 +31,7 @@ public:
     int32_t GetDeviceId() {
         auto ret = aclrtGetDeviceImplOrigin(&deviceId_);
         if (ret != ACL_ERROR_NONE) {
-            ERROR_LOG("Get device id failed. error code: %d", ret);
+            DEBUG_LOG("Get device id failed. error code: %d", ret);
         }
         return deviceId_;
     }
