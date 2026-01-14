@@ -30,7 +30,6 @@ HijackedFuncOfDeviceResetEx::HijackedFuncOfDeviceResetEx()
 void HijackedFuncOfDeviceResetEx::Pre(int32_t devId)
 {
     this->devId_ = devId;
-    DeviceContext::Local().SetDeviceId(devId);
     if (IsSanitizer()) {
         DevMemManager::Instance().Free();
         DEBUG_LOG("calling free function of DevMemManager in HijackedFuncOfDeviceResetEx.");
