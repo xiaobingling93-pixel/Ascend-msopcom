@@ -25,7 +25,7 @@ namespace {
 }
 
 HijackedFuncOfAclrtGetDeviceInfoImpl::HijackedFuncOfAclrtGetDeviceInfoImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtGetDeviceInfoImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtGetDeviceInfoImpl") {}
 
 aclError HijackedFuncOfAclrtGetDeviceInfoImpl::Call(uint32_t deviceId, aclrtDevAttr attr, int64_t *value)
 {

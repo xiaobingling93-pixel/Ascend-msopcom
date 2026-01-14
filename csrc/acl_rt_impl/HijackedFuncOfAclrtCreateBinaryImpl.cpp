@@ -19,7 +19,7 @@
 #include "runtime/inject_helpers/RegisterManager.h"
 
 HijackedFuncOfAclrtCreateBinaryImpl::HijackedFuncOfAclrtCreateBinaryImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtCreateBinaryImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtCreateBinaryImpl") {}
 
 void HijackedFuncOfAclrtCreateBinaryImpl::Pre(const void *data, size_t dataLen)
 {

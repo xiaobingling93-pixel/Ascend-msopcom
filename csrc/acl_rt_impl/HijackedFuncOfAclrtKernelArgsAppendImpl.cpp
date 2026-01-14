@@ -21,7 +21,7 @@
 #include "runtime/inject_helpers/ArgsHandleContext.h"
 
 HijackedFuncOfAclrtKernelArgsAppendImpl::HijackedFuncOfAclrtKernelArgsAppendImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtKernelArgsAppendImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtKernelArgsAppendImpl") {}
 
 void HijackedFuncOfAclrtKernelArgsAppendImpl::Pre(
     aclrtArgsHandle argsHandle, void *param, size_t paramSize,

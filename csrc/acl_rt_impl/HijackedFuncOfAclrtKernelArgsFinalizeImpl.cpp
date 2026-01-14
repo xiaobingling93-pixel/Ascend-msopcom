@@ -21,7 +21,7 @@
 #include "runtime/inject_helpers/ArgsHandleContext.h"
 
 HijackedFuncOfAclrtKernelArgsFinalizeImpl::HijackedFuncOfAclrtKernelArgsFinalizeImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtKernelArgsFinalizeImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtKernelArgsFinalizeImpl") {}
 
 void HijackedFuncOfAclrtKernelArgsFinalizeImpl::Pre(aclrtArgsHandle argsHandle)
 {

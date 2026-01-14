@@ -50,7 +50,7 @@ void ReportKernelBinary(RegisterContextSP regCtx)
 } // namespace [Dummy]
 
 HijackedFuncOfAclrtLaunchKernelImpl::HijackedFuncOfAclrtLaunchKernelImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtLaunchKernelImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtLaunchKernelImpl") {}
 
 bool HijackedFuncOfAclrtLaunchKernelImpl::InitParam(aclrtFuncHandle funcHandle, uint32_t blockDim,
                                                     const void *argsData, size_t argsSize, aclrtStream stream)

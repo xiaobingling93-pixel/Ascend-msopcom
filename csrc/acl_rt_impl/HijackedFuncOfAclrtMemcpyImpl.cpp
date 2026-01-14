@@ -24,7 +24,7 @@
 #include "utils/Serialize.h"
 
 HijackedFuncOfAclrtMemcpyImpl::HijackedFuncOfAclrtMemcpyImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtMemcpyImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtMemcpyImpl") {}
 
 void HijackedFuncOfAclrtMemcpyImpl::Pre(void *dst, size_t destMax, const void *src, size_t count, aclrtMemcpyKind kind)
 {

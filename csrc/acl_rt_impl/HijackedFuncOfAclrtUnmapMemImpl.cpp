@@ -26,7 +26,7 @@
 #include "utils/Serialize.h"
 
 HijackedFuncOfAclrtUnmapMemImpl::HijackedFuncOfAclrtUnmapMemImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtUnmapMemImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtUnmapMemImpl") {}
 
 void HijackedFuncOfAclrtUnmapMemImpl::Pre(void* virPtr)
 {

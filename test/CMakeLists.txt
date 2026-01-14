@@ -68,6 +68,7 @@ target_link_libraries(
     mockcpp
     runtime
     acl_rt_impl
+    ascendcl_impl
     ascend_hal
     stdc++fs
 )

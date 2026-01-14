@@ -21,7 +21,7 @@
 #include "utils/InjectLogger.h"
 
 HijackedFuncOfAclrtGetSocNameImpl::HijackedFuncOfAclrtGetSocNameImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtGetSocNameImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtGetSocNameImpl") {}
 
 const char* HijackedFuncOfAclrtGetSocNameImpl::Call()
 {

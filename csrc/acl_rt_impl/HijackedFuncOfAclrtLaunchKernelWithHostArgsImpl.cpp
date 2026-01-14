@@ -39,7 +39,7 @@
 #include "runtime/inject_helpers/LocalDevice.h"
 
 HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl::HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtLaunchKernelWithHostArgsImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtLaunchKernelWithHostArgsImpl") {}
 
 static void ReportKernelBinary(const RegisterContextSP& regCtx)
 {

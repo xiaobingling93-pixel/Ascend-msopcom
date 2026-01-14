@@ -21,7 +21,7 @@
 
 
 HijackedFuncOfAclmdlRICaptureBeginImpl::HijackedFuncOfAclmdlRICaptureBeginImpl()
-    : HijackedFuncType("acl_rt_impl", "aclmdlRICaptureBeginImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclmdlRICaptureBeginImpl") {}
 
 void HijackedFuncOfAclmdlRICaptureBeginImpl::Pre(aclrtStream stream, aclmdlRICaptureMode mode)
 {

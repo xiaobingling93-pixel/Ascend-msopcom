@@ -27,7 +27,7 @@
 #include "utils/InjectLogger.h"
 
 HijackedFuncOfAclrtGetDeviceImpl::HijackedFuncOfAclrtGetDeviceImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtGetDeviceImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtGetDeviceImpl") {}
 
 aclError HijackedFuncOfAclrtGetDeviceImpl::Call(int32_t *devId)
 {

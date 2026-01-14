@@ -29,7 +29,7 @@
 #include "runtime/inject_helpers/MemoryDataCollect.h"
 
 HijackedFuncOfAclrtMallocImpl::HijackedFuncOfAclrtMallocImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtMallocImpl"), devPtr_{nullptr}, size_{} {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtMallocImpl"), devPtr_{nullptr}, size_{} {}
 
 void HijackedFuncOfAclrtMallocImpl::Pre(void **devPtr, size_t size, aclrtMemMallocPolicy policy)
 {

@@ -27,7 +27,7 @@
 #include "runtime/inject_helpers/MemoryDataCollect.h"
 
 HijackedFuncOfAclrtFreeImpl::HijackedFuncOfAclrtFreeImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtFreeImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtFreeImpl") {}
 
 void HijackedFuncOfAclrtFreeImpl::Pre(void *devPtr)
 {

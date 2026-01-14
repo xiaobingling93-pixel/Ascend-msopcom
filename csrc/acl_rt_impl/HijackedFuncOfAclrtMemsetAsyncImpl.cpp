@@ -24,7 +24,7 @@
 #include "utils/Serialize.h"
 
 HijackedFuncOfAclrtMemsetAsyncImpl::HijackedFuncOfAclrtMemsetAsyncImpl()
-    : HijackedFuncType("acl_rt_impl", "aclrtMemsetAsyncImpl") {}
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtMemsetAsyncImpl") {}
 
 void HijackedFuncOfAclrtMemsetAsyncImpl::Pre(void *devPtr, size_t maxCount, int32_t value, size_t count, aclrtStream stream)
 {

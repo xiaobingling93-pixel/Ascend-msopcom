@@ -40,39 +40,39 @@ namespace {
 
 void HijackedAscendclImplCtor()
 {
-    REGISTER_LIBRARY("acl_rt_impl");
-    REGISTER_FUNCTION("acl_rt_impl", aclrtSetDeviceImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtResetDeviceImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtMallocImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtFreeImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtMemsetImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtMemcpyImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtMapMemImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtUnmapMemImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtIpcMemGetExportKeyImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtIpcMemImportByKeyImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtIpcMemCloseImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtBinaryLoadFromFileImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtBinaryGetFunctionImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtKernelArgsInitImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtKernelArgsAppendImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtKernelArgsParaUpdateImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtKernelArgsAppendPlaceHolderImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtKernelArgsGetPlaceHolderBufferImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtKernelArgsFinalizeImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtLaunchKernelImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtLaunchKernelWithConfigImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtKernelArgsInitByUserMemImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtMallocWithCfgImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclmdlRICaptureBeginImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclmdlRICaptureEndImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclmdlRIBindStreamImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclmdlRIUnbindStreamImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtLaunchKernelWithHostArgsImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtBinaryLoadFromDataImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtCreateBinaryImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtBinaryLoadImpl);
-    REGISTER_FUNCTION("acl_rt_impl", aclrtGetFunctionAttributeImpl);
+    REGISTER_LIBRARY(AclRuntimeLibName());
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtSetDeviceImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtResetDeviceImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtMallocImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtFreeImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtMemsetImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtMemcpyImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtMapMemImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtUnmapMemImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtIpcMemGetExportKeyImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtIpcMemImportByKeyImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtIpcMemCloseImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtBinaryLoadFromFileImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtBinaryGetFunctionImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtKernelArgsInitImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtKernelArgsAppendImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtKernelArgsParaUpdateImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtKernelArgsAppendPlaceHolderImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtKernelArgsGetPlaceHolderBufferImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtKernelArgsFinalizeImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtLaunchKernelImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtLaunchKernelWithConfigImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtKernelArgsInitByUserMemImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtMallocWithCfgImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclmdlRICaptureBeginImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclmdlRICaptureEndImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclmdlRIBindStreamImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclmdlRIUnbindStreamImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtLaunchKernelWithHostArgsImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtBinaryLoadFromDataImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtCreateBinaryImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtBinaryLoadImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtGetFunctionAttributeImpl);
 }
 
 void __attribute__ ((constructor)) HijackedCtor()
