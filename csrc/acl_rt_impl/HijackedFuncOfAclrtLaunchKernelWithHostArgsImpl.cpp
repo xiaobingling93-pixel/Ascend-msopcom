@@ -152,6 +152,7 @@ void HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl::Pre(aclrtFuncHandle funcHa
         return;
     }
     auto bbCountTask = [this](const std::string &outputPath = "") {
+        DBITaskConfig::Instance().argsSize_ = launchCtx_->GetArgsContext()->GetLastParamOffset();
         auto stubCtx = BBCountDumper::Instance().Replace(launchCtx_, outputPath);
         if (stubCtx == nullptr) {
             return;

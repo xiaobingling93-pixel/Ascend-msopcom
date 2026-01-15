@@ -72,6 +72,8 @@ public:
     // 为了能反复使用ExpandArgs函数，需要实现拷贝
     virtual ArgsContextSP Clone(void) const = 0;
 
+    virtual uint32_t GetLastParamOffset() { return 0; }
+
     virtual bool GetTilingData(std::vector<uint8_t> &data) const { return false; }
 protected:
     // 多态基类中的拷贝构造函数、拷贝赋值操作符、移动构造函数、移动赋值操作符必须为非public函数
