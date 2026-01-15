@@ -30,6 +30,7 @@
 #include "runtime/inject_helpers/InstrReport.h"
 #include "runtime/inject_helpers/BBCountDumper.h"
 #include "runtime/inject_helpers/DBITask.h"
+#include "runtime/inject_helpers/LaunchArgs.h"
 #include "utils/InjectLogger.h"
 #include "utils/Protocol.h"
 
@@ -109,6 +110,7 @@ void HijackedFuncOfAclrtLaunchKernelWithConfigImpl::Pre(
         return;
     }
     auto bbCountTask = [this](const std::string &outputPath = "") {
+        DBITaskConfig::Instance().argsSize_ = launchCtx_->GetArgsContext()->GetLastParamOffset();
         auto stubCtx = BBCountDumper::Instance().Replace(launchCtx_, outputPath);
         if (stubCtx == nullptr) {
             return;

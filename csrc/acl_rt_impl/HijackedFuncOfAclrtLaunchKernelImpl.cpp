@@ -36,6 +36,7 @@
 #include "runtime/inject_helpers/MemoryDataCollect.h"
 #include "runtime/inject_helpers/BBCountDumper.h"
 #include "runtime/inject_helpers/DBITask.h"
+#include "runtime/inject_helpers/LaunchArgs.h"
 
 namespace {
 
@@ -135,6 +136,7 @@ void HijackedFuncOfAclrtLaunchKernelImpl::Pre(aclrtFuncHandle funcHandle, uint32
         return;
     }
     auto bbCountTask = [this](const std::string &outputPath = "") {
+        DBITaskConfig::Instance().argsSize_ = launchCtx_->GetArgsContext()->GetLastParamOffset();
         auto stubCtx = BBCountDumper::Instance().Replace(launchCtx_, outputPath);
         if (stubCtx == nullptr) {
             return;

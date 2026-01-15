@@ -40,6 +40,8 @@ public:
 
     bool ExpandArgs(void *param, size_t paramSize, uint32_t &paramOffset) override;
 
+    uint32_t GetLastParamOffset() override;
+
     bool Save(const std::string &outputPath, DumperContext &config, OpMemInfo &memInfo, bool isSink) override;
 
     ArgsContextSP Clone(void) const override;

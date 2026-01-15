@@ -86,6 +86,7 @@ uint32_t GetArgsSize(rtArgsEx_t *argsInfo)
         }
     }
     uint32_t headSize = argsInfo->tilingAddrOffset + PTR_SIZE;
+    if (DeviceContext::Local().NeedOverflowStatus()) { headSize += PTR_SIZE; }
     return GetAlignSize(headSize);
 }
 

@@ -94,6 +94,25 @@ bool ArgsRawContext::ExpandArgs(void *param, size_t paramSize, uint32_t &paramOf
     return true;
 }
 
+uint32_t ArgsRawContext::GetLastParamOffset()
+{
+    constexpr uint32_t ALIGN_SIZE = 8;
+     if (argsSize_ > MAX_ALL_PARAM_SIZE) {
+        ERROR_LOG("argsSize is over max size: %zu", MAX_ALL_PARAM_SIZE);
+        return 0;
+    }
+    if (placeHolderArray_.empty()) {
+        return CeilByAlignSize<ALIGN_SIZE>(argsSize_);
+    }
+    uint32_t lastAddrOffset {};
+    for (auto const &placeHolder : placeHolderArray_) {
+        lastAddrOffset = std::max(lastAddrOffset, placeHolder.addrOffset);
+    }
+    uint32_t paramOffset = lastAddrOffset + sizeof(uintptr_t);
+    if (DeviceContext::Local().NeedOverflowStatus()) { paramOffset += sizeof(uintptr_t); }
+    return paramOffset;
+}
+
 bool ArgsRawContext::Save(const std::string &outputPath, DumperContext &config, OpMemInfo &memInfo, bool isSink)
 {
     (void)isSink;
