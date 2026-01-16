@@ -322,6 +322,127 @@ bool CopySimtRecordToHost(uint8_t *memInfoHost, uint8_t *memInfo, RecordGlobalHe
     return true;
 }
 
+uint8_t CountOneBits(uint64_t number)
+{
+    uint8_t count = 0;
+    while (number != 0) {
+        number &= number - 1;
+        ++count;
+    }
+    return count;
+}
+
+/// 把threadId按三维展开为(x,y,z)
+inline void DecomposeThreadId(uint16_t threadId, RecordBlockHead const &head, SimtThreadLocation &threadLoc)
+{
+    uint16_t threadXDim = head.blockInfo.threadXDim;
+    uint16_t threadYDim = head.blockInfo.threadYDim;
+    if (threadXDim == 0 || threadYDim == 0) {
+        ERROR_LOG("threadXDim or threadYDim equal 0 error in blockId:%d", head.blockInfo.blockId);
+        return;
+    }
+    threadLoc.idX = threadId % threadXDim;
+    threadLoc.idY = (threadId % (threadXDim * threadYDim)) / threadXDim;
+    threadLoc.idZ = threadId / (threadXDim * threadYDim);
+}
+
+void MergeSmRecord(std::vector<ShadowMemoryRecord> &records, uint64_t status, uint64_t addr, RecordBlockHead const &head)
+{
+    ShadowMemoryRecord record{};
+    record.addr = addr;
+    record.size = 1;
+    record.space = AddressSpace::GM;
+    record.opType = MemOpType::STORE;
+    uint16_t threadId = status & 0x3FF;
+    DecomposeThreadId(threadId, head, record.threadLoc);
+    record.location.pc = (status >> 16) & 0xFFFFFFFFFFFF;
+    record.location.blockId = head.blockInfo.blockId;
+    if (records.size() == 0) {
+        records.emplace_back(record);
+        return;
+    }
+    auto &back = records.back();
+    if (back.location == record.location && back.opType == record.opType && back.space == record.space &&
+        back.threadLoc == record.threadLoc) {
+        if (back.addr + back.size == record.addr) {
+            back.size += record.size;
+            return;
+        }
+    }
+    records.emplace_back(record);
+}
+
+inline void ParseSmL2Table(uint64_t *l2TblPtr, size_t l0Idx, size_t l1Idx, RecordBlockHead const &head,
+                           std::vector<ShadowMemoryRecord> &records)
+{
+    uint8_t l1OneBits = CountOneBits(ONLINE_LOCAL_MEM_MASK);
+    uint8_t l2OneBits = CountOneBits(ONLINE_ONE_SM_STAND_FOR_BYTE - 1);
+    for (size_t l2Idx = 0; l2Idx < ONLINE_ONE_SM_STAND_FOR_BYTE; ++l2Idx) {
+        uint64_t status = l2TblPtr[l2Idx];
+        uint8_t memStatus = (status >> 11) & 0x1;
+        if (memStatus == 0) { continue; }
+        uint64_t addr = (l0Idx << l1OneBits) | (l1Idx << l2OneBits) | l2Idx;
+        MergeSmRecord(records, status, addr, head);
+    }
+}
+
+inline void ParseSmL1Table(uint8_t *memInfoHost, uint64_t smBaseAddr, RecordBlockHead const &head,
+                           size_t l0Idx, std::vector<ShadowMemoryRecord> &records)
+{
+    uint64_t l1TblNum = (ONLINE_LOCAL_MEM_MASK + ONLINE_ONE_SM_STAND_FOR_BYTE - 1U) / ONLINE_ONE_SM_STAND_FOR_BYTE;
+    auto l0TblPtr = reinterpret_cast<uint64_t *>(memInfoHost + sizeof(ShadowMemoryHeapHead));
+    uint64_t l1TblOffset = l0TblPtr[l0Idx] - smBaseAddr;
+    auto l1TblPtr = reinterpret_cast<uint64_t *>(memInfoHost + l1TblOffset);
+    for (size_t l1Idx = 0; l1Idx < l1TblNum; ++l1Idx) {
+        if (l1TblPtr[l1Idx] == 0x0) { continue; }
+        uint64_t l2TblOffset = l1TblPtr[l1Idx] - smBaseAddr;
+        auto l2TblPtr = reinterpret_cast<uint64_t *>(memInfoHost + l2TblOffset);
+        ParseSmL2Table(l2TblPtr, l0Idx, l1Idx, head, records);
+    }
+}
+
+inline void ParseSmTable(uint8_t *memInfoHost, uint64_t smBaseAddr, RecordBlockHead const &head,
+                         std::vector<ShadowMemoryRecord> &records)
+{
+    uint64_t l0TblNum = (ONLINE_GLOBAL_MEM_MASK + ONLINE_LOCAL_MEM_MASK - 1U) / ONLINE_LOCAL_MEM_MASK;
+    auto l0TblPtr = reinterpret_cast<uint64_t *>(memInfoHost + sizeof(ShadowMemoryHeapHead));
+    for (size_t l0Idx = 0; l0Idx < l0TblNum; ++l0Idx) {
+        if (l0TblPtr[l0Idx] == 0x0) { continue; }
+        ParseSmL1Table(memInfoHost, smBaseAddr, head, l0Idx, records);
+    }
+}
+
+/// copy all shadow memory records in block to host
+uint64_t CopyShoadowMemoryToHost(uint8_t *memInfoHost, uint8_t *memInfo, RecordGlobalHead const &globalHead,
+RecordBlockHead const &head, uint64_t blockSize)
+{
+    uint64_t blockRemainSize = blockSize - sizeof(RecordGlobalHead) - sizeof(RecordBlockHead) - head.writeOffset -
+    GetAllThreadSize(globalHead);
+    if (aclrtMemcpyImplOrigin(memInfoHost, blockRemainSize, memInfo + globalHead.simtInfo.shadowMemoryOffset,
+        globalHead.simtInfo.shadowMemoryByteSize, ACL_MEMCPY_DEVICE_TO_HOST) != ACL_ERROR_NONE) {
+        ERROR_LOG("finalize memcpy shadow memory error");
+        return {};
+    }
+    uint64_t smBaseAddr = reinterpret_cast<uint64_t>(memInfo) + globalHead.simtInfo.shadowMemoryOffset;
+    std::vector<ShadowMemoryRecord> records;
+    ParseSmTable(memInfoHost, smBaseAddr, head, records);
+
+    ShadowMemoryRecordHead shadowMemoryHead{};
+    shadowMemoryHead.recordCount = records.size();
+    if (aclrtMemcpyImplOrigin(memInfoHost, blockRemainSize, &shadowMemoryHead, sizeof(shadowMemoryHead),
+        ACL_MEMCPY_HOST_TO_HOST) != ACL_ERROR_NONE) {
+        ERROR_LOG("finalize memcpy shadow memory record head error");
+        return {};
+    }
+    if (records.size() == 0U) { return sizeof(shadowMemoryHead); }
+    if (aclrtMemcpyImplOrigin(memInfoHost + sizeof(shadowMemoryHead), blockRemainSize - sizeof(shadowMemoryHead),
+        records.data(), records.size() * sizeof(ShadowMemoryRecord), ACL_MEMCPY_HOST_TO_HOST) != ACL_ERROR_NONE) {
+        ERROR_LOG("finalize memcpy shadow memory record error");
+        return sizeof(shadowMemoryHead);
+    }
+    return sizeof(shadowMemoryHead) + records.size() * sizeof(ShadowMemoryRecord);
+}
+
 void ReportParaBase(RecordBlockHead const &head, ParaBaseRegister &paraBase, bool &isReportParaBase)
 {
     const auto &paraBaseInfo = head.registers.paraBase;
@@ -440,14 +561,18 @@ void ReportMemInfo(uint8_t *memInfoHost, uint8_t *memInfo, uint64_t blockSize, u
         }
 
         /// 4. copy simt records, 当device支持simt并且是目标核的情况下才发送simt内存信息，否则会内存越界
-        uint64_t allThreadSize{};
+        uint64_t simtMemorySize{};
         if (globalHead->supportSimt && (checkBlockId == CHECK_ALL_BLOCK || IsTargetBlockIdx(checkBlockId, blockIdx))) {
             if (!CopySimtRecordToHost(memInfoHost + hostRecordOffset + head->writeOffset,
                 memInfo + sizeof(RecordGlobalHead) + blockHeadOffset, *globalHead, *head, blockSize)) { break; }
-            allThreadSize = GetAllThreadSize(*globalHead);
+            simtMemorySize += GetAllThreadSize(*globalHead);
+            uint64_t smSize = CopyShoadowMemoryToHost(memInfoHost + hostRecordOffset + head->writeOffset +
+                simtMemorySize, memInfo + sizeof(RecordGlobalHead) + blockHeadOffset, *globalHead, *head, blockSize);
+            if (smSize == 0U) { break; }
+            simtMemorySize += smSize;
         }
         UpdateBlockHeadOffset(globalHead->checkParms, blockIdx, head->hostMemoryNum, blockHeadOffset);
-        uint64_t memSize = hostRecordOffset + head->writeOffset + allThreadSize;
+        uint64_t memSize = hostRecordOffset + head->writeOffset + simtMemorySize;
         auto body = Serialize(memSize);
         body.append(static_cast<char*>(static_cast<void*>(memInfoHost)), memSize);
         SendKernelBlock(body, blockIdx, totalBlockDim);

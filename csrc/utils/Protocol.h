@@ -72,6 +72,13 @@ constexpr uint64_t SHADOW_MEM_MIN_BYTE_SIZE = 12 * 1024 * 1024;
 // 非法的地址信息
 constexpr uint64_t ILLEGAL_ADDR = 0xFFFFFFFFFFFFFFFFULL;
 
+// gm建模地址范围0 ~ 0xFFFF FFFF FFFF (48 bits)
+constexpr uint64_t ONLINE_GLOBAL_MEM_MASK = 0xFFFFFFFFFFFFULL;
+// 片上内存建模地址范围0 ~ 0xF FFFF FFFF (36 bits)
+constexpr uint64_t ONLINE_LOCAL_MEM_MASK = 0xFFFFFFFFFULL;
+// 用于标记GM上定义的数据来源于host
+constexpr uint64_t ONLINE_ONE_SM_STAND_FOR_BYTE = 0xFFFFULL + 1; // 64KB
+
 /// argsSize的最大值
 constexpr size_t MAX_ALL_PARAM_SIZE = 1ULL * 1024 * 1024 * 1024;
 /// 单个参数的最大值
@@ -207,6 +214,10 @@ struct KernelInfo {
 
 /// 该结构体主要包含当前block包含的信息，保存在每个核的头部
 struct BlockInfo {
+    uint16_t blockId{};
+    uint16_t threadXDim{};
+    uint16_t threadYDim{};
+    uint16_t threadZDim{};
     BlockType blockType{};                            // 当前block的类型，代表当前核记录的信息属于VEC还是CUBE
     uint8_t vecSubBlockDim{};                         // 当前算子一个blockDim使用的vec核心数，保存在每个核的头部
 };
@@ -308,6 +319,60 @@ enum class MemOpType : uint32_t {
     LOAD,
     STORE,
     INVALID,
+};
+
+/// 内存空间枚举，MemOpRecord 使用，后续逐步弃用
+enum class AddressSpace : int32_t { // 待修改为int8_t
+    PRIVATE = 0,
+    GM,
+    L1,
+    L0A,
+    L0B,
+    L0C,
+    UB,
+    BT, // bias table
+    FB, // fixPipe buffer
+    INVALID = -1,
+};
+
+struct SimtThreadLocation {
+    uint16_t idX;
+    uint16_t idY;
+    uint16_t idZ;
+    bool operator==(const SimtThreadLocation &rhs) const
+    {
+        return this->idX == rhs.idX &&
+               this->idY == rhs.idY &&
+               this->idZ == rhs.idZ;
+    }
+};
+
+struct Location {
+    uint64_t fileNo;
+    uint64_t lineNo;
+    uint64_t pc;
+    uint16_t blockId;
+    bool operator==(const Location &rhs) const
+    {
+        return this->fileNo == rhs.fileNo &&
+               this->lineNo == rhs.lineNo &&
+               this->pc == rhs.pc &&
+               this->blockId == rhs.blockId;
+    }
+};
+
+struct ShadowMemoryRecordHead {
+    uint32_t type = 40010;
+    uint64_t recordCount;
+};
+
+struct ShadowMemoryRecord {
+    uint64_t addr;
+    uint64_t size;
+    Location location;
+    SimtThreadLocation threadLoc;
+    AddressSpace space;
+    MemOpType opType;
 };
 
 /// 内存分配信息来源，优先级为 MANUAL > EXTRA > ACL > RT > HAL
