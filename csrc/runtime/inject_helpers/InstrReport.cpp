@@ -226,18 +226,21 @@ inline bool InitGlobalHead(RecordGlobalHead &head, uint64_t blockDim, KernelType
             (1 - SIMT_CACHE_SIZE_RATIO - SHADOW_MEM_CACHE_SIZE_RATIO));
         head.simtInfo.offset = AlignDownSize<CACHE_LINE_SIZE>(simtOffset) + GetRecordHeadSize(hostMemoryNum);
         DEBUG_LOG("simtInfo.offset=%lu", head.simtInfo.offset);
-
+    
         if (shadowMemoryByteSize < SHADOW_MEM_MIN_BYTE_SIZE) {
-            ERROR_LOG("cache-size:%u is too small for shadow memory, need cache-size >= %lu", head.checkParms.cacheSize,
+            WARN_LOG("overlapping detection between threads is disabled. "
+                "cache-size:%u is too small, need cache-size >= %lu",
+                head.checkParms.cacheSize,
                 static_cast<uint64_t>(SHADOW_MEM_MIN_BYTE_SIZE / MB_TO_BYTES / SHADOW_MEM_CACHE_SIZE_RATIO));
-            return false;
+            head.simtInfo.shadowMemoryOffset = 0U;
+            head.simtInfo.shadowMemoryByteSize = 0U;
+        } else {
+            head.simtInfo.shadowMemoryOffset = AlignDownSize<CACHE_LINE_SIZE>(head.simtInfo.offset +
+                GetAllThreadSize(head) + CACHE_LINE_SIZE - 1);
+            head.simtInfo.shadowMemoryByteSize = shadowMemoryByteSize;
+            DEBUG_LOG("simtInfo shadowMemoryOffset=%lu shadowMemoryByteSize=%lu",
+                head.simtInfo.shadowMemoryOffset, head.simtInfo.shadowMemoryByteSize);
         }
-
-        head.simtInfo.shadowMemoryOffset = AlignDownSize<CACHE_LINE_SIZE>(head.simtInfo.offset +
-            GetAllThreadSize(head) + CACHE_LINE_SIZE - 1);
-        head.simtInfo.shadowMemoryByteSize = shadowMemoryByteSize;
-        DEBUG_LOG("simtInfo shadowMemoryOffset=%lu shadowMemoryByteSize=%lu",
-            head.simtInfo.shadowMemoryOffset, head.simtInfo.shadowMemoryByteSize);
     }
     return AssignMemSize(head, blockDim, deviceType);
 }
@@ -453,6 +456,40 @@ void ReportMemInfo(uint8_t *memInfoHost, uint8_t *memInfo, uint64_t blockSize, u
     if (isReportParaBase) { ReportFree(paraBase.addr, MemInfoSrc::BYPASS, MemInfoDesc::PARA_BASE); }
 }
 
+bool InitSimtShadowMemoryHead(const RecordGlobalHead &recordGlobalHead, uint8_t *&memInfo, uint64_t blockHeadOffset)
+{
+    uint64_t shadowMemorySize = recordGlobalHead.simtInfo.shadowMemoryByteSize;
+    uint64_t shadowMemoryOffset = recordGlobalHead.simtInfo.shadowMemoryOffset;
+    uint8_t *shadowMemoryHeadAddr = memInfo + sizeof(RecordGlobalHead) + blockHeadOffset + shadowMemoryOffset;
+
+    aclError error = aclrtMemsetImplOrigin(shadowMemoryHeadAddr, shadowMemorySize, 0x00, shadowMemorySize);
+    if (error != ACL_ERROR_NONE) {
+        ERROR_LOG("init memset 0 to shadow memory heap error: %d", error);
+        return false;
+    }
+
+    ShadowMemoryHeapHead smHeapHead;
+    smHeapHead.startAddr = (uint64_t)shadowMemoryHeadAddr + sizeof(ShadowMemoryHeapHead);
+    smHeapHead.size = shadowMemorySize > sizeof(ShadowMemoryHeapHead) ?
+        shadowMemorySize - sizeof(ShadowMemoryHeapHead) : 0U;
+    smHeapHead.current = smHeapHead.startAddr;
+    smHeapHead.lock = 0U;
+
+    DEBUG_LOG("ShadowMemoryHeapHead on 0x%lx startAddr=0x%lx size=0x%lx current=0x%lx lock=0x%lx",
+        reinterpret_cast<uint64_t>(shadowMemoryHeadAddr),
+        smHeapHead.startAddr, smHeapHead.size, smHeapHead.current, smHeapHead.lock);
+
+    error = aclrtMemcpyImplOrigin(shadowMemoryHeadAddr,
+        sizeof(ShadowMemoryHeapHead), static_cast<const void*>(&smHeapHead),
+        sizeof(ShadowMemoryHeapHead), ACL_MEMCPY_HOST_TO_DEVICE);
+    if (error != ACL_ERROR_NONE) {
+        ERROR_LOG("init shadow memory heap head error: %d", error);
+        return false;
+    }
+
+    return true;
+}
+
 bool InitSimtBlockInfo(RecordGlobalHead &recordGlobalHead, uint8_t *&memInfo, size_t blockIdx, uint64_t blockHeadOffset)
 {
     if (!recordGlobalHead.supportSimt) {
@@ -481,7 +518,18 @@ bool InitSimtBlockInfo(RecordGlobalHead &recordGlobalHead, uint8_t *&memInfo, si
             ERROR_LOG("init memset simt record block head error: %d", error);
             return false;
         }
+
+        // 初始化 shadow memory
+        if (recordGlobalHead.simtInfo.shadowMemoryByteSize == 0U) {
+            DEBUG_LOG("shadow memory disabled for block %lu", blockIdx);
+        } else {
+            if (!InitSimtShadowMemoryHead(recordGlobalHead, memInfo, blockHeadOffset)) {
+                ERROR_LOG("init shadow memory head error for block: %lu", blockIdx);
+                return false;
+            }
+        }
     }
+
     return true;
 }
 
@@ -508,7 +556,7 @@ bool InitRecordHeaders(RecordGlobalHead &recordGlobalHead, uint8_t *memInfo, uin
 
     for (size_t blockIdx = 0; blockIdx < recordGlobalHead.kernelInfo.totalBlockDim; ++blockIdx) {
         // 2. 初始化每个核的 RecordBlockHead
-        DEBUG_LOG("blockHeadOffset=%lu", (uint64_t)blockHeadOffset);
+        DEBUG_LOG("blockHeadOffset=%lu", blockHeadOffset);
         recordBlockHead.hostMemoryInfoPtr = hostMemoryNum > 0 ?
             reinterpret_cast<HostMemoryInfo *>(memInfo + sizeof(RecordGlobalHead) + blockHeadOffset +
                 sizeof(RecordBlockHead)) : nullptr;
