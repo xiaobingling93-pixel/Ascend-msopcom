@@ -43,10 +43,6 @@ namespace {
 
 class InstrReportTest : public testing::Test {
 public:
-    static void SetUpTestCase()
-    {
-        MOCKER(&SanitizerConfigManager::GetConfig).stubs().will(returnValue(SanitizerConfig()));
-    }
     void SetUp() override
     {
         server_.reset(new Server(CommType::SOCKET));
@@ -137,6 +133,7 @@ aclError GetDeviceOriginStub(int32_t *devId)
 
 TEST_F(InstrReportTest, init_with_invalid_block_dim_expect_return_nullptr)
 {
+    MOCKER(&SanitizerConfigManager::GetConfig).stubs().will(returnValue(SanitizerConfig()));
     ASSERT_EQ(__sanitizer_init(0), nullptr);
     ASSERT_EQ(__sanitizer_init(MAX_BLOCKDIM_NUMS + 1), nullptr);
 }
@@ -260,6 +257,7 @@ TEST_F(InstrReportTest, finalize_with_blocks_of_records_expect_return)
 
 TEST_F(InstrReportTest, input_valid_soc_info_expect_correct_arch_name)
 {
+    MOCKER(&SanitizerConfigManager::GetConfig).stubs().will(returnValue(SanitizerConfig()));
     vector<tuple<KernelType, string, string>> testCases{
         {KernelType::AIVEC, "Ascend910B", "dav-c220-vec"},
         {KernelType::AICUBE, "Ascend910B", "dav-c220-cube"},
@@ -275,6 +273,7 @@ TEST_F(InstrReportTest, input_valid_soc_info_expect_correct_arch_name)
 
 TEST_F(InstrReportTest, input_invalid_soc_info_expect_correct_arch_name)
 {
+    MOCKER(&SanitizerConfigManager::GetConfig).stubs().will(returnValue(SanitizerConfig()));
     vector<tuple<KernelType, string, string>> testCases{
         {KernelType::AIVEC, "Invalid", ""},
         {KernelType::INVALID, "Ascend910B", ""},
