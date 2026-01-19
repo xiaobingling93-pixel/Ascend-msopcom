@@ -147,7 +147,7 @@ void HijackedFuncOfKernelLaunchWithHandleV2::ProfPost()
             if (opRecordLaunchRet != RT_ERROR_NONE) {
                 WARN_LOG("Operand record kernel launch failed, ret is %d.", opRecordLaunchRet);
             } else {
-                profObj_->GenOperandRecordData(memSize_, memInfo_);
+                profObj_->GenRecordData(memSize_, memInfo_, OPERAND_RECORD);
             }
         }
     }

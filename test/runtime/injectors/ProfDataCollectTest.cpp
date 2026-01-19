@@ -935,7 +935,7 @@ TEST_F(ProfDataCollectTest, Malloc_Free_L2Cache_Buffer_expect_return_fail)
 TEST_F(ProfDataCollectTest, test_not_gen_operand_data)
 {
     ProfDataCollect profDataCollect;
-    profDataCollect.GenOperandRecordData(0, nullptr);
+    profDataCollect.GenRecordData(0, nullptr, OPERAND_RECORD);
     std::string path = path_;
     std::ofstream writer(path, std::ios::out | std::ios::binary);
     ASSERT_TRUE(writer.is_open());
@@ -944,7 +944,7 @@ TEST_F(ProfDataCollectTest, test_not_gen_operand_data)
     MOCKER(aclrtFreeHostImplOrigin).stubs().will(returnValue(0));
     MOCKER(aclrtMemcpyImplOrigin).stubs().will(returnValue(200));
     testing::internal::CaptureStdout();
-    profDataCollect.GenOperandRecordData(1, nullptr);
+    profDataCollect.GenRecordData(1, nullptr, OPERAND_RECORD);
     std::string capture = testing::internal::GetCapturedStdout();
     EXPECT_NE(capture.find("ERROR"), std::string::npos);
 }
@@ -962,12 +962,12 @@ TEST_F(ProfDataCollectTest, SaveObject_exptct_return_true)
 TEST_F(ProfDataCollectTest, test_not_gen_operand_data_because_write_data_error)
 {
     ProfDataCollect profDataCollect;
-    profDataCollect.GenOperandRecordData(0, nullptr);
+    profDataCollect.GenRecordData(0, nullptr, OPERAND_RECORD);
 
     MOCKER(aclrtMallocHostImplOrigin).stubs().will(returnValue(0));
     MOCKER(aclrtFreeHostImplOrigin).stubs().will(returnValue(0));
     MOCKER(aclrtMemcpyImplOrigin).stubs().will(returnValue(0));
-    profDataCollect.GenOperandRecordData(1, nullptr);
+    profDataCollect.GenRecordData(1, nullptr, OPERAND_RECORD);
     auto path = profDataCollect.GetAicoreOutputPath(0);
     EXPECT_EQ(path, "");
 }
@@ -975,7 +975,7 @@ TEST_F(ProfDataCollectTest, test_not_gen_operand_data_because_write_data_error)
 TEST_F(ProfDataCollectTest, test_gen_operand_data_success)
 {
     ProfDataCollect profDataCollect;
-    profDataCollect.GenOperandRecordData(0, nullptr);
+    profDataCollect.GenRecordData(0, nullptr, OPERAND_RECORD);
     std::string path = path_;
     std::ofstream writer(path, std::ios::out | std::ios::binary);
     ASSERT_TRUE(writer.is_open());
@@ -985,7 +985,7 @@ TEST_F(ProfDataCollectTest, test_gen_operand_data_success)
     MOCKER(aclrtMemcpyImplOrigin).stubs().will(returnValue(0));
     MOCKER(WriteBinary).stubs().will(returnValue(1));
     testing::internal::CaptureStdout();
-    profDataCollect.GenOperandRecordData(1, nullptr);
+    profDataCollect.GenRecordData(1, nullptr, OPERAND_RECORD);
     std::string capture = testing::internal::GetCapturedStdout();
     EXPECT_EQ(capture.find("WARN"), std::string::npos);
     EXPECT_EQ(capture.find("ERROR"), std::string::npos);

@@ -88,6 +88,37 @@ void HijackedFuncOfKernelLaunch::InitParam(const void *stubFunc, uint32_t blockD
     KernelContext::Instance().ArchiveMemInfo();
 }
 
+void HijackedFuncOfKernelLaunch::ProfPreForInstrProf(const std::function<bool(void)> &func,
+                                                     const std::function<void(const std::string &)> &bbCountTask,
+                                                     rtStream_t stm)
+{
+    auto funcStub = [this]() {
+        return (rtKernelLaunchOrigin(this->stubFunc_, this->blockDim_, this->args_, this->argsSize_,
+                                    this->smDesc_, this->stm_) == RT_ERROR_NONE);
+    };
+    if (ProfConfig::Instance().IsPCSamplingEnabled()) {
+        uint8_t *memInfo = nullptr;
+        uint64_t memSize= PrepareDbiTaskForInstrProf(INSTR_PROF_MODE_PC_SAMPLING, memInfo);
+        KernelContext::StubFuncPtr stubFuncPtr{this->stubFunc_};
+        uint64_t kernelAddr;
+        if (!KernelContext::Instance().GetDeviceContext().GetKernelAddr(
+            KernelContext::StubFuncArgs{stubFuncPtr.value, nullptr}, kernelAddr)) {
+            ERROR_LOG("Can not get kernel addr for kernel start stub.");
+        }
+        WriteFileByStream(JoinPath({ProfDataCollect::GetAicoreOutputPath(devId_), "pc_start_pcsampling.txt"}),
+                        NumToHexString(kernelAddr), std::fstream::out, std::fstream::binary);
+        profObj_->InstrProfData(stm, funcStub);
+        profObj_->GenRecordData(memSize, memInfo, PCOFFSET_RECORD);
+    }
+    if (ProfConfig::Instance().IsTimelineEnabled()) {
+        uint8_t *memInfo = nullptr;
+        PrepareDbiTaskForInstrProf(INSTR_PROF_MODE_BIU_PERF, memInfo);
+        ProfPre(funcStub, bbCountTask, stm);
+    } else {
+        ProfPre(func, bbCountTask, stm);
+    }
+}
+
 void HijackedFuncOfKernelLaunch::ProfPre(const std::function<bool(void)> &func,
                                          const std::function<void(const std::string &)> &bbCountTask,
                                          rtStream_t stm)
@@ -173,7 +204,7 @@ void HijackedFuncOfKernelLaunch::ProfPost()
             if (opRecordLaunchRet != RT_ERROR_NONE) {
                 WARN_LOG("Operand record kernel launch failed, ret is %d.", opRecordLaunchRet);
             } else {
-                profObj_->GenOperandRecordData(memSize_, memInfo_);
+                profObj_->GenRecordData(memSize_, memInfo_, OPERAND_RECORD);
             }
         }
     }
@@ -217,23 +248,17 @@ void HijackedFuncOfKernelLaunch::Pre(const void *stubFunc, uint32_t blockDim, vo
             }
         }
     };
-
+    auto func = [stubFunc, blockDim, args, argsSize, smDesc, stm]() {
+        return (rtKernelLaunchOrigin(stubFunc, blockDim, args, argsSize, smDesc, stm) == RT_ERROR_NONE);
+    };
     if (IsOpProf()) {
         if (ProfConfig::Instance().IsSimulator()) {
             KernelContext::RegisterEvent event;
             KernelContext::Instance().GetRegisterEvent(regId_, event);
             profObj_->ProfInit(event.hdl, stubFunc);
-        } else if (ProfConfig::Instance().IsTimelineEnabled()) {
-            PrepareDbiTaskForInstrProf();
-            auto func = [this]() {
-                return (rtKernelLaunchOrigin(this->stubFunc_, this->blockDim_, this->args_, this->argsSize_,
-                                             this->smDesc_, this->stm_) == RT_ERROR_NONE);
-            };
-            ProfPre(func, bbCountTask, stm);
+        } else if (ProfConfig::Instance().IsTimelineEnabled() || ProfConfig::Instance().IsPCSamplingEnabled()) {
+            ProfPreForInstrProf(func, bbCountTask, stm);
         } else {
-            auto func = [stubFunc, blockDim, args, argsSize, smDesc, stm]() {
-                return (rtKernelLaunchOrigin(stubFunc, blockDim, args, argsSize, smDesc, stm) == RT_ERROR_NONE);
-            };
             ProfPre(func, bbCountTask, stm);
         }
     }
@@ -244,19 +269,21 @@ void HijackedFuncOfKernelLaunch::Pre(const void *stubFunc, uint32_t blockDim, vo
 }
 
 // timeline 以及 pcsampling功能需要插end 和 start桩
-void HijackedFuncOfKernelLaunch::PrepareDbiTaskForInstrProf()
+ uint64_t HijackedFuncOfKernelLaunch::PrepareDbiTaskForInstrProf(uint8_t mode, uint8_t *&memInfo)
 {
     refreshParamFunc_();
-    uint64_t memSize = BLOCK_GAP;
-    uint8_t *memInfo = nullptr;
+    uint64_t memSize = INSTR_PROF_MEMSIZE;
     KernelMatcher::Config matchConfig;
     std::string path = GetEnv(DEVICE_PROF_DUMP_PATH_ENV);
-    DBITaskConfig::Instance().Init(BIType::CUSTOMIZE, ProfConfig::Instance().GetPluginPath(PluginType::INSTR_PROF_END),
-                                   matchConfig, path);
+    std::string pluginPath = mode == INSTR_PROF_MODE_BIU_PERF ?
+            ProfConfig::Instance().GetPluginPath(PluginType::INSTR_PROF_END) :
+            ProfConfig::Instance().GetPluginPath(PluginType::INSTR_PROF_START);
+    DBITaskConfig::Instance().Init(BIType::CUSTOMIZE, pluginPath, matchConfig, path, {START_STUB_COMPILER_ARGS});
     memInfo = InitMemory(memSize);
     if (!ExpandArgs(this->args_, this->argsSize_, this->argsVec_, memInfo) || !RunDBITask(&this->stubFunc_)) {
         ERROR_LOG("End or start stub run failed.");
     }
+    return memSize;
 }
 
 rtError_t HijackedFuncOfKernelLaunch::Call(const void *stubFunc, uint32_t blockDim, void *args,

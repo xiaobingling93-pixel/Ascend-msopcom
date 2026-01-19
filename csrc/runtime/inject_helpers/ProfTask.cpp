@@ -44,8 +44,6 @@ constexpr int FFTS_PROF_MODE_BULT = 2;
 constexpr int FFTS_PROF_BLOCK_SHINK_DISABLE = 2;
 constexpr int FFTS_PROF_AIC_SCALE_ALL = 0;
 constexpr int FFTS_PROF_AIC_SCALE_PARTIAL = 1;
-constexpr int INSTR_PROF_MODE_BIU_PERF = 0;
-constexpr int INSTR_PROF_MODE_PC_SAMPLING = 1;
 constexpr int INSTR_PROF_PERIOD = 32;
 
 // ts data code
@@ -182,8 +180,7 @@ private:
     bool StartInstrProfTask(int mode);
     std::map<InstrChannel, InstrProfChnInfo> instrProfChn_;
     std::atomic<bool> timelineEnable_ {false};
-    std::atomic<bool> pcSamplingEnable_ {false};
-    std::atomic<bool> instrProfRunning_ {false};
+    std::atomic<bool> pcSamplingFinish_ {false};
 private:
     bool isStarsStart_ = false;
     bool StartStarsTask();
@@ -592,7 +589,7 @@ void ProfTask::ChannelRead()
 bool ProfTaskOfA5::WriteInstrChannelData(const std::string &prefixName, InstrChannel channelId,
     const char *data, int validLen, InstrChnReadCtrl &instrChnReadController)
 {
-    if (instrProfChn_.count(channelId) == 0UL || !instrProfRunning_) {
+    if (instrProfChn_.count(channelId) == 0UL) {
         return false;
     }
     DEBUG_LOG("Write instr prof channel id:%d", static_cast<int>(channelId));
@@ -605,7 +602,7 @@ bool ProfTaskOfA5::WriteInstrChannelData(const std::string &prefixName, InstrCha
     std::string binName;
     if (timelineEnable_) {
         binName = "timeline.bin." + std::to_string(instrChnReadController.splitFileNum);
-    } else if (pcSamplingEnable_) {
+    } else if (ProfConfig::Instance().IsPCSamplingEnabled() && !pcSamplingFinish_) {
         binName = "pcSampling.bin." + std::to_string(instrChnReadController.splitFileNum);
     } else {
         return true;
@@ -646,12 +643,10 @@ bool ProfTaskOfA5::StartInstrProfTask(int mode)
     for (auto const &it : instrProfChn_) {
         int ret = prof_drv_start_origin(deviceId_, static_cast<uint32_t>(it.first), &instrProfStartPara);
         if (ret != 0) {
-            DEBUG_LOG("Failed to start instr profiling channel:%d, return code:%d", static_cast<uint32_t>(it.first),
-                      ret);
+            DEBUG_LOG("Failed to start instr profiling channel:%d, return code:%d", static_cast<uint32_t>(it.first), ret);
         }
     }
     free(instrProfStartPara.user_data);
-    instrProfRunning_ = true;
     return true;
 }
 
@@ -700,19 +695,17 @@ bool ProfTaskOfA5::StartStarsTask()
 bool ProfTaskOfA5::Start(uint32_t replayCount)
 {
     profRunning_ = true;
+    if (ProfConfig::Instance().IsPCSamplingEnabled() && !pcSamplingFinish_) {
+        return StartInstrProfTask(INSTR_PROF_MODE_PC_SAMPLING);
+    }
     if (!StartFFTSTask(replayCount)) {
         return false;
     }
 
     // Biu Perf 和 PCSampling 共用通道，在2次重放中采集且只采1次
-    if (ProfConfig::Instance().IsTimelineEnabled() && !timelineEnable_ && !instrProfRunning_ && isLastReplay_) {
+    if (ProfConfig::Instance().IsTimelineEnabled() && !timelineEnable_ && isLastReplay_) {
         timelineEnable_ = true;
         if (!StartInstrProfTask(INSTR_PROF_MODE_BIU_PERF)) {
-            return false;
-        }
-    } else if (ProfConfig::Instance().IsPCSamplingEnabled() && !pcSamplingEnable_ && !instrProfRunning_) {
-        pcSamplingEnable_ = true;
-        if (!StartInstrProfTask(INSTR_PROF_MODE_PC_SAMPLING)) {
             return false;
         }
     }
@@ -730,11 +723,16 @@ void ProfTaskOfA5::Stop()
     if (isStarsStart_) {
         prof_stop_origin(deviceId_, CHANNEL_STARS_SOC_LOG_BUFFER);
     }
-    if ((timelineEnable_ && instrProfRunning_) || (pcSamplingEnable_ && instrProfRunning_)) {
+    if (timelineEnable_) {
         for (auto const &it : instrProfChn_) {
             prof_stop_origin(deviceId_, static_cast<uint32_t>(it.first));
         }
-        instrProfRunning_ = false;
+        timelineEnable_ = false;
+    } else if (!pcSamplingFinish_) {
+        for (auto const &it : instrProfChn_) {
+            prof_stop_origin(deviceId_, static_cast<uint32_t>(it.first));
+        }
+        pcSamplingFinish_ = true;
     }
     profRunning_ = false;
 }
