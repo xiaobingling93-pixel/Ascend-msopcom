@@ -249,7 +249,7 @@ void HijackedFuncOfAclrtLaunchKernelWithConfigImpl::DoOperandRecord()
         originfunc_(funcHandle_, blockDim_, stream_, cfg_, argsHandle_, reserve_);
         aclError ret = aclrtSynchronizeStreamImplOrigin(stream_);
         if (ret == ACL_SUCCESS) {
-            profObj_->GenOperandRecordData(memSize_, memInfo_);
+            profObj_->GenRecordData(memSize_, memInfo_, OPERAND_RECORD);
         } else {
             WARN_LOG("Run operand record func failed");
         }

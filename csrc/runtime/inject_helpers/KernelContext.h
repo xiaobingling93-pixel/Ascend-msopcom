@@ -213,12 +213,12 @@ public:
         // 本质就是cq一直获取任务，然后执行任务
         void ListenCallbackTask(int32_t devId);
         bool SubscribeReport(rtStream_t stm);
+        bool GetKernelAddr(StubFuncArgs const &args, uint64_t &kernelAddr) const;
+        bool GetKernelAddr(KernelHandleArgs const &args, uint64_t &kernelAddr) const;
     private:
         // dump kernel args including input data, tiling data
         bool DumpKernelArgs(const std::string &outputDir, uint64_t launchId, ContextConfig &config);
 
-        bool GetKernelAddr(StubFuncArgs const &args, uint64_t &kernelAddr) const;
-        bool GetKernelAddr(KernelHandleArgs const &args, uint64_t &kernelAddr) const;
         bool GetKernelOffset(StubFuncArgs const &args, uint64_t &kernelOffset) const;
         bool GetKernelOffset(KernelHandleArgs const &args, uint64_t &kernelOffset) const;
 

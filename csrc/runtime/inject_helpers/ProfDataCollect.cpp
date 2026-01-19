@@ -216,6 +216,7 @@ public:
     static std::map<std::thread::id, RangeReplayConfig> threadRangeConfigMap_;
     explicit DataCollect(const LaunchContextSP &ctx, bool isInitOutput = true);
     virtual bool ProfData(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc) { return false; }
+    virtual bool InstrProfData(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc) { return false; }
     virtual bool ProfData() { return false; }
 
     virtual void ProfInit(const void *hdl, const void *stubFunc, bool type) {};
@@ -246,7 +247,7 @@ public:
 
     virtual void GenDBIData(uint64_t memSize, uint8_t *memInfo) {};
 
-    virtual void GenOperandRecordData(uint64_t memSize, uint8_t *memInfo) const {};
+    virtual void GenRecordData(uint64_t memSize, uint8_t *memInfo, const std::string &recordName) const {};
 };
 std::map<int32_t, std::string> DataCollect::deviceOutputPathMap_; // 静态成员类外初始化
 std::map<int32_t, uint32_t> DataCollect::deviceReplayCountMap_;
@@ -300,13 +301,15 @@ public:
     virtual ~DataCollectInDevice() = default;
     void ProfInit(const void *hdl, const void *stubFunc, bool type) override;
     bool ProfData(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc) override;
+    bool InstrProfData(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc) override;
     void GenBBcountFile(uint64_t regId, uint64_t memSize, uint8_t *memInfo) override;
     void GenDBIData(uint64_t memSize, uint8_t *memInfo) override;
-    void GenOperandRecordData(uint64_t memSize, uint8_t *memInfo) const override;
+    void GenRecordData(uint64_t memSize, uint8_t *memInfo, const std::string &recordName) const override;
     bool RangeReplay(const rtStream_t &stream, const aclmdlRI &modelRI) override;
 private:
     bool ReplayOnce(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc, L2cacheParam &param);
     bool KernelReplay(rtStream_t stream, const std::function<bool(void)>& kernelLaunchFunc);
+    bool KernelLaunchForInstrProf(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc);
     bool SupportProfL2CacheEvict();
     void MC2KernelLaunch(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc, bool &ret);
     void ProfCommandAction(MsprofCommandHandleType type) const;
@@ -362,6 +365,7 @@ private:
     void LoadFrequency();
     void SaveBasicInfo();
     void WarmUp(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc) const;
+    void WarmUp(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc, uint16_t warmUpTimes) const;
     void WarmUp(const rtStream_t &stream, const aclmdlRI &modelRI) const;
     bool PrepareClearL2CacheParam(L2cacheParam &param) const;
     bool MallocBuffer(L2cacheParam &param) const;
@@ -802,6 +806,9 @@ void DataCollectInDevice::ProfCommandAction(MsprofCommandHandleType type) const
 
     if (ProfConfig::Instance().IsTimelineEnabled() || ProfConfig::Instance().IsPCSamplingEnabled()) {
         command.profSwitch = PROF_INSTR;
+        if (ProfInjectHelper::Instance().profTimestampEnabled_) {
+            command.profSwitch = PROF_INSTR | PROF_OP_TIMESTAMP;
+        }
         res = profSetProfCommandOrigin(static_cast<void *>(&command), sizeof(RtProfCommandHandleT));
     }
     DEBUG_LOG("profSetProfCommandOrigin type %d res is %d", static_cast<int>(type), static_cast<int>(res));
@@ -889,9 +896,9 @@ void DataCollectInDevice::GenDBIData(uint64_t memSize, uint8_t *memInfo)
     ProfConfig::Instance().SendMsg(Serialize(head, dbiHeader) + outputPath_);
 }
 
-void DataCollectInDevice::GenOperandRecordData(uint64_t memSize, uint8_t *memInfo) const
+void DataCollectInDevice::GenRecordData(uint64_t memSize, uint8_t *memInfo, const std::string &recordName) const
 {
-    DEBUG_LOG("Gen operand record data, memSize is %lu", memSize);
+    DEBUG_LOG("Gen record %s, memSize is %lu", recordName.c_str(), memSize);
     if (memSize == 0) {
         return;
     }
@@ -908,9 +915,9 @@ void DataCollectInDevice::GenOperandRecordData(uint64_t memSize, uint8_t *memInf
         memInfoHost = nullptr;
         return;
     }
-    auto path = JoinPath({outputPath_, "OperandRecord.bin"});
+    auto path = JoinPath({outputPath_, recordName});
     if (WriteBinary(path, reinterpret_cast<const char *>(memInfoHost), memSize) == 0) {
-        WARN_LOG("Write OperandRecord.bin failed");
+        WARN_LOG("Write %s failed", recordName.c_str());
     }
     aclrtFreeHostImplOrigin(memInfoHost);
 }
@@ -1035,6 +1042,49 @@ bool DataCollectInDevice::ReplayOnce(rtStream_t stream, const std::function<bool
     return ret;
 }
 
+bool DataCollectInDevice::KernelLaunchForInstrProf(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc)
+{
+    // 采集 pc sampling 对算子预热20次
+    WarmUp(stream, kernelLaunchFunc, 20);
+    ProfCommandAction(MsprofCommandHandleType::PROF_COMMANDHANDLE_TYPE_START);
+
+    bool isMC2 = KernelContext::Instance().GetMC2Flag();
+    std::thread readThread;
+    if (!StartProf(readThread)) {
+        StopProf();
+        WARN_LOG("Start profiling failed. Skipping KernelLaunchForInstrProf");
+        return false;
+    }
+    bool ret = true;
+    aclError syncRet {ACL_SUCCESS};
+    if (isMC2) {
+        MC2KernelLaunch(stream, kernelLaunchFunc, ret);
+    } else {
+        ret = kernelLaunchFunc();
+        if (ret) {
+            syncRet = aclrtSynchronizeStreamWithTimeoutImplOrigin(stream, SYNCHRONIZE_TIME_OUT);
+        }
+    }
+    StopProf();
+    if (readThread.joinable()) {
+        readThread.join();
+    }
+    if (syncRet == ACL_SUCCESS && ret) {
+        return ret;
+    } else {
+        WARN_LOG("Kernel run on device %d for instr prof failed.", deviceId_);
+    }
+    if (ProfConfig::Instance().IsAppReplay()) {
+        return ret;
+    }
+    // MC2调优去掉Restore,配合取消AICORE 劫持函数CALL的那次调用，取得最后一次重放的aicore的timeline
+    if (!isMC2 && !KernelContext::Instance().GetLcclFlag()) {
+        MemoryContext::Instance().Restore();
+    }
+    return ret;
+}
+ 	 
+
 bool DataCollectInDevice::KernelReplay(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc)
 {
     if (ProfConfig::Instance().IsDbi()) {
@@ -1075,6 +1125,30 @@ bool DataCollectInDevice::KernelReplay(rtStream_t stream, const std::function<bo
     }
     FreeL2Cache(param);
     return funcRet;
+}
+
+bool DataCollectInDevice::InstrProfData(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc)
+{
+    if (ProfConfig::Instance().IsRangeReplay()) {
+        return false;
+    }
+    DEBUG_LOG("Kernel running for pcSampling, kernel name is %s", kernelName_.c_str());
+    if (outputPath_.empty()) {
+        return true;
+    }
+    if (!IsExist(outputPath_)) {
+        return false;
+    }
+    bool isMC2 = KernelContext::Instance().GetMC2Flag();
+    if (!ProfConfig::Instance().IsAppReplay() && !KernelContext::Instance().GetLcclFlag() && !isMC2 &&
+        !MemoryContext::Instance().Backup()) {
+        INFO_LOG("memoryContext failed!");
+        return false;
+    }
+    DEBUG_LOG("Start Instr profiling on device %d, kernel: %s", deviceId_, kernelName_.c_str());
+    aclrtSynchronizeStreamImplOrigin(stream);
+    auto ret = KernelLaunchForInstrProf(stream, kernelLaunchFunc);
+    return ret;
 }
 
 bool DataCollectInDevice::SupportProfL2CacheEvict()
@@ -1287,6 +1361,11 @@ bool DataCollectInDevice::ProfData(rtStream_t stream, const std::function<bool(v
 void DataCollectInDevice::WarmUp(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc) const
 {
     uint16_t warmUpTimes = ProfConfig::Instance().GetWarmUpTimes();
+    WarmUp(stream, kernelLaunchFunc, warmUpTimes);
+}
+ 	 
+void DataCollectInDevice::WarmUp(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc, uint16_t warmUpTimes) const
+{
     if (warmUpTimes == 0 || KernelContext::Instance().GetMC2Flag() || KernelContext::Instance().GetLcclFlag()) {
         return;
     }
@@ -1565,6 +1644,11 @@ ProfDataCollect::ProfDataCollect(const LaunchContextSP &ctx, bool isInitOutput)
     }
 }
 
+bool ProfDataCollect::InstrProfData(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc)
+{
+    return dataCollect_->InstrProfData(stream, kernelLaunchFunc);
+}
+
 bool ProfDataCollect::ProfData(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc)
 {
     return dataCollect_->ProfData(stream, kernelLaunchFunc);
@@ -1665,9 +1749,9 @@ void ProfDataCollect::GenDBIData(uint64_t memSize, uint8_t *memInfo)
     dataCollect_->GenDBIData(memSize, memInfo);
 }
 
-void ProfDataCollect::GenOperandRecordData(uint64_t memSize, uint8_t *memInfo)
+void ProfDataCollect::GenRecordData(uint64_t memSize, uint8_t *memInfo, const std::string &recordName)
 {
-    dataCollect_->GenOperandRecordData(memSize, memInfo);
+    dataCollect_->GenRecordData(memSize, memInfo, recordName);
 }
 
 bool ProfDataCollect::RangeReplay(const rtStream_t &stream, const aclmdlRI &modelRI)

@@ -233,6 +233,9 @@ bool CustomDBI::Convert(const std::string& newKernelFile, const std::string& old
         "bisheng-tune", "--action=instru-probe", "--tune-argsize=" + to_string(config_.argSize), "--instru-memprobe",
         tempKernelWithProbePath, "--dbi-config=" + tempCtrlPath, "-o=" + newKernelFile
     };
+    for (size_t i = 0; i < config_.extraArgs.size(); ++i) {
+        args.push_back(config_.extraArgs[i]);
+    }
     if (!tilingKey.empty()) {
         args.push_back("--tiling-key=" + tilingKey);
     }

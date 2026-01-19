@@ -50,8 +50,10 @@ public:
     void ProfInit(const void *hdl, const void *stubFunc = nullptr, bool type = true);
     bool ProfData(); // simulator
     bool ProfData(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc); // device
+    bool InstrProfData(rtStream_t stream, const std::function<bool(void)> &kernelLaunchFunc);
     void GenBBcountFile(uint64_t regId, uint64_t memSize, uint8_t *memInfo);
     void GenDBIData(uint64_t memSize, uint8_t *memInfo);
+    void GenRecordData(uint64_t memSize, uint8_t *memInfo, const std::string &recordName);
     void GenOperandRecordData(uint64_t memSize, uint8_t *memInfo);
     void PostProcess() const; // device
     bool IsNeedProf();

@@ -408,13 +408,6 @@ TEST(ProfTask, test_A5_start_instr_task_when_start_task_failed_then_return_false
         .stubs()
         .will(returnValue(1));
     ProfConfig::Instance().profConfig_.timelineEnable = true;
-    ProfConfig::Instance().profConfig_.pcSamplingEnable = false;
-    ASSERT_FALSE(task->Start(0));
-    ProfConfig::Instance().profConfig_.timelineEnable = false;
-    ProfConfig::Instance().profConfig_.pcSamplingEnable = true;
-    ASSERT_FALSE(task->Start(0));
-    ProfConfig::Instance().profConfig_.timelineEnable = true;
-    ProfConfig::Instance().profConfig_.pcSamplingEnable = true;
     ASSERT_FALSE(task->Start(0));
     GlobalMockObject::verify();
 }

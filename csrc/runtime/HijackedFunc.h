@@ -94,9 +94,10 @@ private:
     void ProfPre(const std::function<bool(void)> &func,
                  const std::function<void(const std::string &)> &bbCountTask, rtStream_t stm);
     void SanitizerPre();
-    void PrepareDbiTaskForInstrProf();
+    uint64_t PrepareDbiTaskForInstrProf(uint8_t mode, uint8_t *&memInfo);
     void ProfPost();
     void SanitizerPost() const;
+    void ProfPreForInstrProf(const std::function<bool(void)> &func, const std::function<void(const std::string &)> &bbCountTask, rtStream_t stm);
 private:
     const void *stubFunc_{nullptr};
     std::string bbStubFuncStr_;
@@ -189,7 +190,8 @@ private:
                    rtSmDesc_t *smDesc, rtStream_t stm, uint32_t flags, const rtTaskCfgInfo_t *cfgInfo);
     void ProfPre(const std::function<bool(void)> &func,
                  const std::function<void(const std::string &)> &bbCountTask, rtStream_t stm);
-    void PrepareDbiTaskForInstrProf();
+    void ProfPreForInstrProf(const std::function<bool(void)> &func, const std::function<void(const std::string &)> &bbCountTask, rtStream_t stm);
+    uint64_t PrepareDbiTaskForInstrProf(uint8_t mode, uint8_t *&memInfo);
     void SanitizerPre();
 
     void ProfPost();

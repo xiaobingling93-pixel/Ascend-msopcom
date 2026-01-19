@@ -19,6 +19,7 @@
 #define __BINARY_INSTRUCTION__
 
 #include <string>
+#include <vector>
 #include <memory>
 #include <map>
 
@@ -52,6 +53,7 @@ public:
         std::string archName; // e.g dav-m200
         std::string tmpDir;
         uint32_t argSize;
+        std::vector<std::string> extraArgs;
     };
 
     explicit BinaryInstrumentation(BIType biType);
