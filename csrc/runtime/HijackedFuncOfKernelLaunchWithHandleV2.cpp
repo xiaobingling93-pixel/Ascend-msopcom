@@ -116,6 +116,7 @@ void HijackedFuncOfKernelLaunchWithHandleV2::ProfPost()
     }
     std::string path = GetEnv(DEVICE_PROF_DUMP_PATH_ENV);
     if (profObj_->IsMemoryChartNeedGen()) {
+        rtStreamSynchronizeOrigin(stm_);
         refreshParamFunc_();
         auto blockDim = GetCoreNumForDbi(blockDim_);
         memSize_ = BLOCK_MEM_SIZE * blockDim;
@@ -134,6 +135,7 @@ void HijackedFuncOfKernelLaunchWithHandleV2::ProfPost()
     }
     std::string socVersion = DeviceContext::Local().GetSocVersion();
     if (profObj_->IsOperandRecordNeedGen(socVersion)) {
+        rtStreamSynchronizeOrigin(stm_);
         refreshParamFunc_();
         uint64_t sizePerAllType = static_cast<uint32_t>(OperandType::END) * sizeof(OperandRecord) + SIMT_THREAD_GAP;
         memSize_ = sizeof(OperandHeader) + (sizePerAllType * 2049 + BLOCK_GAP) * GetCoreNumForDbi(blockDim_);
