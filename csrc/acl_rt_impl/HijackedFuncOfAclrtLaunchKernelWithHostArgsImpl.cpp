@@ -252,6 +252,7 @@ void HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl::ProfPost()
         KernelMatcher::Config matchConfig;
         std::string path = GetEnv(DEVICE_PROF_DUMP_PATH_ENV);
         DBITaskConfig::Instance().Init(BIType::CUSTOMIZE, ProfConfig::Instance().GetPluginPath(), matchConfig, path);
+        aclrtSynchronizeStreamImplOrigin(stream_);
         refreshParamFunc_();
         memSize_ = BLOCK_MEM_SIZE * MAX_BLOCK;
         auto argsCtx = launchCtx_->GetArgsContext()->Clone();

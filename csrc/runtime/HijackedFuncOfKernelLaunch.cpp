@@ -176,6 +176,7 @@ void HijackedFuncOfKernelLaunch::ProfPost()
     }
     std::string path = GetEnv(DEVICE_PROF_DUMP_PATH_ENV);
     if (profObj_->IsMemoryChartNeedGen()) {
+        rtStreamSynchronizeOrigin(stm_);
         refreshParamFunc_();
         uint64_t memSize = BLOCK_MEM_SIZE * GetCoreNumForDbi(blockDim_);
         DBITaskConfig::Instance().Init(BIType::CUSTOMIZE, ProfConfig::Instance().GetPluginPath(), {}, path);
@@ -192,6 +193,7 @@ void HijackedFuncOfKernelLaunch::ProfPost()
     }
     std::string socVersion = DeviceContext::Local().GetSocVersion();
     if (profObj_->IsOperandRecordNeedGen(socVersion)) {
+        rtStreamSynchronizeOrigin(stm_);
         refreshParamFunc_();
         uint64_t sizePerAllType = static_cast<uint32_t>(OperandType::END) * sizeof(OperandRecord) + SIMT_THREAD_GAP;
         this->memSize_ = sizeof(OperandHeader) + (sizePerAllType * 2049 + BLOCK_GAP) *  GetCoreNumForDbi(blockDim_);

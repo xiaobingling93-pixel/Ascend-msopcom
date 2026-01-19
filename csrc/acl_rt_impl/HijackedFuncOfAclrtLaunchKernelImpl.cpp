@@ -226,6 +226,7 @@ void HijackedFuncOfAclrtLaunchKernelImpl::DoOperandRecord()
     std::string path = GetEnv(DEVICE_PROF_DUMP_PATH_ENV);
     DBITaskConfig::Instance().Init(BIType::CUSTOMIZE,
                                    ProfConfig::Instance().GetPluginPath(PluginType::OPERAND_RECORD), matchConfig, path);
+    aclrtSynchronizeStreamImplOrigin(stream_);                               
     refreshParamFunc_();
     uint64_t sizePerAllType = static_cast<uint32_t>(OperandType::END) * sizeof(OperandRecord) + SIMT_THREAD_GAP;
     memSize_ = sizeof(OperandHeader) + (sizePerAllType * 2049 + BLOCK_GAP) *  GetCoreNumForDbi(blockDim_);
@@ -262,6 +263,7 @@ void HijackedFuncOfAclrtLaunchKernelImpl::ProfPost()
         KernelMatcher::Config matchConfig;
         std::string path = GetEnv(DEVICE_PROF_DUMP_PATH_ENV);
         DBITaskConfig::Instance().Init(BIType::CUSTOMIZE, ProfConfig::Instance().GetPluginPath(), matchConfig, path);
+        aclrtSynchronizeStreamImplOrigin(stream_);
         refreshParamFunc_();
         auto blockDim = GetCoreNumForDbi(blockDim_);
         memSize_ = BLOCK_MEM_SIZE * blockDim;
