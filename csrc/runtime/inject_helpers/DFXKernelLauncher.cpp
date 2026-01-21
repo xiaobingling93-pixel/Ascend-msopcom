@@ -121,7 +121,7 @@ std::string DFXKernelLauncher::GetL2CacheKernelPath()
     std::string socVersion = DeviceContext::Local().GetSocVersion();
     auto deviceType = GetDeviceTypeBySocVersion(socVersion);
     std::string libPath = JoinPath({msopprofPath, "lib64"});
-    if (deviceType >= DeviceType::ASCEND_910B1 && deviceType <= DeviceType::ASCEND_910B4) {
+    if (deviceType > DeviceType::ASCEND_910B_START && deviceType < DeviceType::ASCEND_910B_END) {
         kernelPath = JoinPath({libPath, "dfx_kernel_dav-c220-cube.o"});
     } else if (deviceType == DeviceType::ASCEND_310P) {
         kernelPath = JoinPath({libPath, "dfx_kernel_dav-m200.o"});

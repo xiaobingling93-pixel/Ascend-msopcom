@@ -55,80 +55,36 @@ inline bool CheckBlockDimValid(uint64_t blockDim)
     return true;
 }
 
+inline bool IsC220Arch(DeviceType deviceType)
+{
+    return deviceType > DeviceType::ASCEND_910B_START && deviceType < DeviceType::ASCEND_910B_END;
+}
+
+inline bool IsC310Arch(DeviceType deviceType)
+{
+    return deviceType > DeviceType::ASCEND_910_95_START && deviceType < DeviceType::ASCEND_910_95_END;
+}
+
 inline bool HasSubBlocks(DeviceType deviceType)
 {
-    switch (deviceType) {
-        case DeviceType::ASCEND_910B1:
-        case DeviceType::ASCEND_910B2:
-        case DeviceType::ASCEND_910B3:
-        case DeviceType::ASCEND_910B4:
-        case DeviceType::ASCEND_910_950z:
-        case DeviceType::ASCEND_910_9579:
-        case DeviceType::ASCEND_910_957b:
-        case DeviceType::ASCEND_910_957d:
-        case DeviceType::ASCEND_910_9581:
-        case DeviceType::ASCEND_910_9589:
-        case DeviceType::ASCEND_910_958a:
-        case DeviceType::ASCEND_910_958b:
-        case DeviceType::ASCEND_910_9599:
-            return true;
-        case DeviceType::ASCEND_910_PREMIUM_A:
-        case DeviceType::ASCEND_310P:
-            return false;
-        case DeviceType::INVALID:
-        default :
-            return false;
-    }
+    return IsC220Arch(deviceType) || IsC310Arch(deviceType);
 }
 
 inline bool SupportSimt(DeviceType deviceType)
 {
-    switch (deviceType) {
-        case DeviceType::ASCEND_910_950z:
-        case DeviceType::ASCEND_910_9579:
-        case DeviceType::ASCEND_910_957b:
-        case DeviceType::ASCEND_910_957d:
-        case DeviceType::ASCEND_910_9581:
-        case DeviceType::ASCEND_910_9589:
-        case DeviceType::ASCEND_910_958a:
-        case DeviceType::ASCEND_910_958b:
-        case DeviceType::ASCEND_910_9599:
-            return true;
-        case DeviceType::ASCEND_910B1:
-        case DeviceType::ASCEND_910B2:
-        case DeviceType::ASCEND_910B3:
-        case DeviceType::ASCEND_910B4:
-        case DeviceType::ASCEND_910_PREMIUM_A:
-        case DeviceType::ASCEND_310P:
-        case DeviceType::INVALID:
-        default :
-            return false;
-    }
+    return IsC310Arch(deviceType);
 }
 
 inline uint32_t GetUbSize(DeviceType deviceType)
 {
-    switch (deviceType) {
-        case DeviceType::ASCEND_910_950z:
-        case DeviceType::ASCEND_910_9579:
-        case DeviceType::ASCEND_910_957b:
-        case DeviceType::ASCEND_910_957d:
-        case DeviceType::ASCEND_910_9581:
-        case DeviceType::ASCEND_910_9589:
-        case DeviceType::ASCEND_910_958a:
-        case DeviceType::ASCEND_910_958b:
-        case DeviceType::ASCEND_910_9599:
-            return C310_UB_SIZE;
-        case DeviceType::ASCEND_910B1:
-        case DeviceType::ASCEND_910B2:
-        case DeviceType::ASCEND_910B3:
-        case DeviceType::ASCEND_910B4:
-            return C220_UB_SIZE;
-        case DeviceType::ASCEND_310P:
-            return M200_UB_SIZE;
-        default :
-            return 0UL;
+    if (IsC220Arch(deviceType)) {
+         return C220_UB_SIZE;
+    } else if (IsC310Arch(deviceType)) {
+        return C310_UB_SIZE;
+    } else if (deviceType == DeviceType::ASCEND_310P) {
+        return M200_UB_SIZE;
     }
+    return 0UL;
 }
 
 inline KernelType MagicToKernelType(uint32_t magic)
