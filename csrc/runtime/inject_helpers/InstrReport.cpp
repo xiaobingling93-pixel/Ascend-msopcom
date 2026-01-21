@@ -655,39 +655,6 @@ bool InitRecordHeaders(RecordGlobalHead &recordGlobalHead, uint8_t *memInfo, uin
             return false;
         }
 
-        // 初始化shadow memory
-        if (recordGlobalHead.supportSimt) {
-            uint64_t shadowMemorySize = recordGlobalHead.simtInfo.shadowMemoryByteSize;
-            uint64_t shadowMemoryOffset = recordGlobalHead.simtInfo.shadowMemoryOffset;
-
-            uint8_t *shadowMemoryHeadAddr = memInfo + sizeof(RecordGlobalHead) + blockHeadOffset + shadowMemoryOffset;
-
-            DEBUG_LOG("ShadowMemoryHeapHead on 0x%lx", reinterpret_cast<uint64_t>(shadowMemoryHeadAddr));
-            error = aclrtMemsetImplOrigin(shadowMemoryHeadAddr, shadowMemorySize, 0x00, shadowMemorySize);
-            if (error != ACL_ERROR_NONE) {
-                ERROR_LOG("init memset 0 to shadow memory heap error: %d", error);
-                return false;
-            }
-
-            ShadowMemoryHeapHead smHeapHead;
-            smHeapHead.startAddr = (uint64_t)shadowMemoryHeadAddr + sizeof(ShadowMemoryHeapHead);
-            smHeapHead.size = shadowMemorySize > sizeof(ShadowMemoryHeapHead) ?
-                shadowMemorySize - sizeof(ShadowMemoryHeapHead) : 0U;
-            smHeapHead.current = smHeapHead.startAddr;
-            smHeapHead.lock = 0U;
-
-            DEBUG_LOG("ShadowMemoryHeapHead startAddr=0x%lx size=0x%lx current=0x%lx lock=0x%lx",
-                smHeapHead.startAddr, smHeapHead.size, smHeapHead.current, smHeapHead.lock);
-
-            error = aclrtMemcpyImplOrigin(shadowMemoryHeadAddr,
-                sizeof(ShadowMemoryHeapHead), static_cast<const void*>(&smHeapHead),
-                sizeof(ShadowMemoryHeapHead), ACL_MEMCPY_HOST_TO_DEVICE);
-            if (error != ACL_ERROR_NONE) {
-                ERROR_LOG("init shadow memory heap head error: %d", error);
-                return false;
-            }
-        }
-
         UpdateBlockHeadOffset(recordGlobalHead.checkParms, blockIdx, hostMemoryNum, blockHeadOffset);
     }
     return true;
