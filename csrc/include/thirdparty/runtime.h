@@ -1,18 +1,8 @@
-/* -------------------------------------------------------------------------
- * This file is part of the MindStudio project.
- * Copyright (c) 2025 Huawei Technologies Co.,Ltd.
- *
- * MindStudio is licensed under Mulan PSL v2.
- * You can use this software according to the terms and conditions of the Mulan PSL v2.
- * You may obtain a copy of Mulan PSL v2 at:
- *
- *          http://license.coscl.org.cn/MulanPSL2
- *
- * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND,
- * EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT,
- * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
- * See the Mulan PSL v2 for more details.
- * ------------------------------------------------------------------------- */
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2020-2021. All rights reserved.
+ * Description: kernel.h
+ * Create: 2020-01-01
+ */
 
 // 这个文件本身需要与被劫持的对象一样（为方便后续区分acl等劫持，此处包含cann包的runtime内多个文件定义内容）
 
@@ -194,7 +184,12 @@ typedef struct tagRtTaskCfgInfo {
     uint8_t qos;
     uint8_t partId;
     uint8_t schemMode; // rtschemModeType_t 0:normal;1:batch;2:sync
-    uint8_t res[1]; // res
+    bool d2dCrossFlag;
+    uint32_t blockDimOffset;
+    uint8_t dumpflag;
+    uint8_t neverTimeout;
+    uint8_t res[2]; // res
+    uint32_t localMemorySize;
 } rtTaskCfgInfo_t;
 
 /**

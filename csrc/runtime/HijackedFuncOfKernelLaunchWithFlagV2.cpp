@@ -72,7 +72,10 @@ void HijackedFuncOfKernelLaunchWithFlagV2::InitParam(const void *stubFunc, uint3
     KernelContext::Instance().GetLaunchEvent(launchId_, event);
     this->isSink_ = event.isSink;
     if (argsInfo != nullptr) { KernelContext::Instance().SetArgsSize(argsInfo->argsSize); }
-    if (IsSanitizer()) { KernelContext::Instance().SetKernelParamNum(GetKernelParamNum(argsInfo)); }
+    if (IsSanitizer()) {
+        if (cfgInfo != nullptr) { KernelContext::Instance().SetSimtUbDynamicSize(cfgInfo->localMemorySize); }
+        KernelContext::Instance().SetKernelParamNum(GetKernelParamNum(argsInfo));
+    }
     DBITaskConfig::Instance().argsSize_ = 0;  // avoid multi kernelLaunch,reset invalid argSize=0
     if (IsOpProf()) {
         this->profObj_ = MakeShared<ProfDataCollect>();

@@ -75,18 +75,6 @@ inline bool SupportSimt(DeviceType deviceType)
     return IsC310Arch(deviceType);
 }
 
-inline uint32_t GetUbSize(DeviceType deviceType)
-{
-    if (IsC220Arch(deviceType)) {
-         return C220_UB_SIZE;
-    } else if (IsC310Arch(deviceType)) {
-        return C310_UB_SIZE;
-    } else if (deviceType == DeviceType::ASCEND_310P) {
-        return M200_UB_SIZE;
-    }
-    return 0UL;
-}
-
 inline KernelType MagicToKernelType(uint32_t magic)
 {
     KernelType kernelType {KernelType::INVALID};
@@ -160,10 +148,13 @@ inline bool InitGlobalHead(RecordGlobalHead &head, uint64_t blockDim, KernelType
     head.kernelInfo.kernelParamNum = KernelContext::Instance().GetKernelParamNum();
     DeviceType deviceType = GetDeviceTypeBySocVersion(DeviceContext::Local().GetSocVersion());
     head.supportSimt = SupportSimt(deviceType);
-    head.deviceInfo.ubSize = GetUbSize(deviceType);
     if (head.supportSimt) {
         // ====|=====|=============
         // SIMD、SIMT、ShadowMemory
+        uint32_t ubDynamicSize = KernelContext::Instance().GetSimtUbDynamicSize();
+        DEBUG_LOG("simtInfo.ubDynamicSize:%u", ubDynamicSize);
+        constexpr uint32_t ubDynamicAlignSize = 128;
+        head.simtInfo.ubDynamicSize = CeilByAlignSize<ubDynamicAlignSize>(ubDynamicSize);
         uint64_t threadByteSize =
             static_cast<uint64_t>(cliConfig.cacheSize * MB_TO_BYTES * SIMT_CACHE_SIZE_RATIO / SIMT_THREAD_MAX_SIZE);
         uint64_t shadowMemoryByteSize =

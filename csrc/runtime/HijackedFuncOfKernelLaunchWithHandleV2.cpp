@@ -76,7 +76,10 @@ void HijackedFuncOfKernelLaunchWithHandleV2::InitParam(void *hdl, const uint64_t
     KernelContext::Instance().GetLastLaunchEvent(event);
     this->isSink_ = event.isSink;
     if (argsInfo != nullptr) { KernelContext::Instance().SetArgsSize(argsInfo->argsSize); }
-    if (IsSanitizer()) { KernelContext::Instance().SetKernelParamNum(GetKernelParamNum(argsInfo)); }
+    if (IsSanitizer()) {
+        if (cfgInfo != nullptr) { KernelContext::Instance().SetSimtUbDynamicSize(cfgInfo->localMemorySize); }
+        KernelContext::Instance().SetKernelParamNum(GetKernelParamNum(argsInfo));
+    }
     if (IsOpProf()) {
         this->profObj_ = MakeShared<ProfDataCollect>();
     }

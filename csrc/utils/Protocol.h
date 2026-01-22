@@ -86,10 +86,6 @@ constexpr size_t MAX_SINGLE_PARAM_SIZE = 4096;
 /// AclrtMemcpy2d的高度最大值
 constexpr size_t MAX_MEMORY_RECORD_HEIGHT = 60ULL * 1024 * 1024 * 1024;
 
-constexpr uint32_t C220_UB_SIZE = 196608UL;
-constexpr uint32_t C310_UB_SIZE = 253952UL;
-constexpr uint32_t M200_UB_SIZE = 262144UL;
-
 enum class PacketType : uint32_t {
     // 各工具通用的协议
     DEVICE_SUMMARY = 0,  // 设备信息
@@ -199,11 +195,6 @@ enum class BlockType : uint8_t {
     AICUBE,
 };
 
-/// 设备信息
-struct DeviceInfo {
-    uint32_t ubSize;
-};
-
 /// 该结构体主要包含当前kernel包含的信息
 struct KernelInfo {
     uint64_t totalBlockDim{};                         // 工具根据业务逻辑计算得到的blockDim
@@ -249,6 +240,7 @@ struct SimtInfo {
     uint64_t threadByteSize{};                        // 每个thread最多存储多少个字节
     uint64_t shadowMemoryOffset{};                    // shadow memory 起始偏移地址
     uint64_t shadowMemoryByteSize{};                  // shadow memory 最多使用多少字节
+    uint32_t ubDynamicSize{};
 };
 
 struct SimtRecordBlockHeadImpl {
@@ -266,7 +258,6 @@ struct RecordGlobalHeadImpl {
     CheckParmsInfo checkParms{};
     KernelInfo kernelInfo{};
     SimtInfo simtInfo{};
-    DeviceInfo deviceInfo{};
     bool supportSimt{false};                // 当前芯片类型是否支持simt
 };
 

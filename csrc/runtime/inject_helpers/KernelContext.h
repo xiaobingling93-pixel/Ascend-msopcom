@@ -404,6 +404,10 @@ public:
     void SetKernelParamNum(uint32_t kernelParamNum) { kernelParamNum_ = kernelParamNum; }
     /// 获取算子的argsSize
     uint32_t GetKernelParamNum() const { return kernelParamNum_; }
+
+    void SetSimtUbDynamicSize(uint32_t simtUbDynamicSize) { simtUbDynamicSize_ = simtUbDynamicSize; }
+    uint32_t GetSimtUbDynamicSize() const { return simtUbDynamicSize_; }
+
 private:
     // 根据 stubFunc 查询 pcStart 地址
     bool GetPcStartAddr(StubFuncPtr stubFunc, uint64_t &pcStartAddr);
@@ -420,6 +424,7 @@ private:
         deviceContextMap_.clear();
         argsSize_ = 0;
         kernelParamNum_ = 0;
+        simtUbDynamicSize_ = 0;
     }
 
     std::vector<void *> tempHostMemory_;
@@ -432,4 +437,5 @@ private:
     mutable std::unordered_map<int32_t, DeviceContext> deviceContextMap_;
     uint32_t argsSize_{};
     uint32_t kernelParamNum_{};
+    uint32_t simtUbDynamicSize_{};
 };
