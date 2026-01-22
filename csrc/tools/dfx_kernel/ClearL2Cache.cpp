@@ -32,4 +32,17 @@ extern "C" __global__ [aicore] void ClearL2Cache(__gm__ void* buffer, __gm__ voi
         pipe_barrier(PIPE_MTE2);
     }
 #endif
+
+#if defined(__DAV_C310_CUBE__)
+    uint64_t blockLen = *(__gm__ uint64_t *)tilingSize;
+    __gm__ int8_t* bufferStart = (__gm__ int8_t *)buffer + blockLen * get_block_idx();
+    __cbuf__  int8_t *l1Addr = 0;
+    int32_t loopCount = blockLen / TILE_LENGTH;
+    for (int i = 0; i < loopCount; i++) {
+        copy_gm_to_cbuf_align_v2(l1Addr, bufferStart + i * TILE_LENGTH, 0, 1, TILE_LENGTH, 0, 0, 0, 2, 0, 0);
+        pipe_barrier(PIPE_MTE2);
+        copy_gm_to_cbuf_align_v2(l1Addr, bufferStart + i * TILE_LENGTH, 0, 1, TILE_LENGTH, 0, 0, 0, 0, 0, 0);
+        pipe_barrier(PIPE_MTE2);
+    }
+#endif
 }

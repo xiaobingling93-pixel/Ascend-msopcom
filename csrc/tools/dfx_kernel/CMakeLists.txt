@@ -13,6 +13,7 @@ set(CMAKE_CXX_FLAGS "")
 set(CCE_AICORE_ARCH_LIST_CLEAR_L2CACHE
     "dav-c220-cube"
     "dav-m200"
+    "dav-c310-cube"
 )
 set(CCE_AICORE_ARCH_EMPTY_KERNEL "dav-c220-vec")
 
@@ -52,14 +53,31 @@ endfunction()
 
 foreach(CCE_AICORE_ARCH ${CCE_AICORE_ARCH_LIST_CLEAR_L2CACHE})
     set(DFX_KERNEL_OBJECT dfx_kernel_${CCE_AICORE_ARCH}_tmp)
-    set(MERGED_OBJECT dfx_kernel_${CCE_AICORE_ARCH}.o)
-    set(MERGED_TARGET dfx_kernel_${CCE_AICORE_ARCH})
+    set(MERGED_OBJECT dfx_kernel_tmp_${CCE_AICORE_ARCH}.o)
+    set(MERGED_TARGET dfx_kernel_tmp_${CCE_AICORE_ARCH})
     compile_cce_object(${CCE_AICORE_ARCH} ${DFX_KERNEL_OBJECT} "${CLEAR_L2CACHE_KERNEL_FILES}")
     link_cce_object_to_executable(${MERGED_OBJECT} ${DFX_KERNEL_OBJECT})
     add_custom_target(${MERGED_TARGET} ALL DEPENDS ${MERGED_OBJECT})
     install(FILES ${KERNEL_OUTPUT_PATH}/${MERGED_OBJECT} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib64)
 endforeach()
 
+function(delete_section_to_obj LAST_OBJ NEXT_OBJ SECTION_NAME)
+    add_custom_command(
+        OUTPUT ${NEXT_OBJ}
+        VERBATIM
+        COMMENT "Delete section ${SECTION_NAME} to ${LAST_OBJ}"
+        DEPENDS ${LAST_OBJ}
+        COMMAND llvm-objcopy --remove-section ${SECTION_NAME} ${LAST_OBJ}
+        COMMAND cp ${LAST_OBJ} ${NEXT_OBJ}
+    )
+endfunction()
+
+foreach(CCE_AICORE_ARCH ${CCE_AICORE_ARCH_LIST_CLEAR_L2CACHE})
+    delete_section_to_obj(dfx_kernel_tmp_${CCE_AICORE_ARCH}.o dfx_kernel_${CCE_AICORE_ARCH}.o .ascend.meta.ClearL2Cache)
+    set(DFX_TARGET dfx_kernel_${CCE_AICORE_ARCH})
+    add_custom_target(${DFX_TARGET} ALL DEPENDS dfx_kernel_${CCE_AICORE_ARCH}.o)
+    install(FILES ${KERNEL_OUTPUT_PATH}/${DFX_TARGET}.o DESTINATION ${CMAKE_INSTALL_PREFIX}/lib64)
+endforeach()
 
 set(DFX_EMPTY_KERNEL_OBJECT empty_kernel_${CCE_AICORE_ARCH_EMPTY_KERNEL}_tmp)
 set(EMPTY_OBJECT empty_kernel_${CCE_AICORE_ARCH_EMPTY_KERNEL}.o)

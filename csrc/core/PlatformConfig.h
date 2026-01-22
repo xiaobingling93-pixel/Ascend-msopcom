@@ -304,6 +304,15 @@ inline ChipProductType GetProductTypeBySocVersion(const std::string &socVersion)
     return chipType;
 }
 
+inline ChipProductType GetProductSeriesType(const std::string &socVersion)
+{
+    ChipProductType chipProductType = GetProductTypeBySocVersion(socVersion);
+    if (chipProductType == ChipProductType::UNKNOWN_PRODUCT_TYPE) {
+        return chipProductType;
+    }
+    return GetProductSeriesType(chipProductType);
+}
+
 inline DeviceType GetDeviceTypeBySocVersion(const std::string &socVersion)
 {
     auto it = SOC_STRING_TO_CHIP_PRODUCT.find(socVersion);

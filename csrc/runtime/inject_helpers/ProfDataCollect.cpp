@@ -1446,11 +1446,6 @@ void DataCollectInDevice::WarmUp(const rtStream_t &stream, const aclmdlRI &model
 bool DataCollectInDevice::PrepareClearL2CacheParam(L2cacheParam &param) const
 {
     std::string socVersion = DeviceContext::Local().GetSocVersion();
-    auto chipType = GetProductTypeBySocVersion(socVersion);
-    if (IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND910_95_SERIES)) {
-        DEBUG_LOG("Clear l2Cache not enable in 910_95.");
-        return false;
-    }
     auto it = l2CacheClearTilingMap.find(socVersion);
     if (it == l2CacheClearTilingMap.end()) {
         WARN_LOG("Cannot get L2Cache info when clear L2Cache.");
@@ -1513,12 +1508,12 @@ bool DataCollectInDevice::WaitClearL2Cache(L2cacheParam &param) const
     if (ret != ACL_SUCCESS) { return false; }
     ret = CheckAclResult(aclrtSynchronizeStreamImplOrigin(param.stream), "aclrtSynchronizeStreamImpl");
     if (ret != ACL_SUCCESS) { return false; }
-    if (!runSocVersion.empty()) {
-        if (runSocVersion.find("Ascend310P") == std::string::npos && runSocVersion.find("Ascend310p") == std::string::npos) {
-            ret = CheckAclResult(aclrtCmoAsyncImplOrigin(param.cmoBuffer, param.bufferSize,
+    auto chipType = GetProductTypeBySocVersion(runSocVersion);
+    if (IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND910B_SERIES) || 
+        IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND910_93_SERIES)) {
+        ret = CheckAclResult(aclrtCmoAsyncImplOrigin(param.cmoBuffer, param.bufferSize,
             ACL_RT_CMO_TYPE_PREFETCH, param.stream), "aclrtCmoAsyncImpl");
             if (ret != ACL_SUCCESS) { return false; }
-        }
     }
     ret = CheckAclResult(aclrtSynchronizeStreamImplOrigin(param.stream), "aclrtSynchronizeStreamImpl");
     return ret == ACL_SUCCESS;

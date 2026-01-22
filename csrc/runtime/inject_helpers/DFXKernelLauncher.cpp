@@ -107,10 +107,17 @@ std::string DFXKernelLauncher::GetEmptyKernelPath()
 
 std::string DFXKernelLauncher::GetL2CacheKernelPath()
 {
-    std::string kernelPath;
-    std::vector<ChipProductType> chipSeries = {ChipProductType::ASCEND910B_SERIES, ChipProductType::ASCEND910_93_SERIES,
-                                               ChipProductType::ASCEND310P_SERIES};
-    if (!CheckSupportSeries(chipSeries)) {
+    static const std::map<ChipProductType, std::string> chipToKernel {
+        {ChipProductType::ASCEND910B_SERIES, "dfx_kernel_dav-c220-cube.o"},
+        {ChipProductType::ASCEND910_93_SERIES, "dfx_kernel_dav-c220-cube.o"},
+        {ChipProductType::ASCEND310P_SERIES, "dfx_kernel_dav-m200.o"},
+        {ChipProductType::ASCEND910_95_SERIES, "dfx_kernel_dav-c310-cube.o"}
+    };
+    std::string socVersion = DeviceContext::Local().GetSocVersion();
+    auto chipType = GetProductSeriesType(socVersion);
+    auto objIter = chipToKernel.find(chipType);
+    if (objIter == chipToKernel.end()) {
+        DEBUG_LOG("Cannot find supported kernel when init DFXKernelLauncher.");
         return "";
     }
     std::string msopprofPath = ProfConfig::Instance().GetMsopprofPath();
@@ -118,16 +125,7 @@ std::string DFXKernelLauncher::GetL2CacheKernelPath()
         DEBUG_LOG("Get msopt path failed when init DFXKernelLauncher.");
         return "";
     }
-    std::string socVersion = DeviceContext::Local().GetSocVersion();
-    auto deviceType = GetDeviceTypeBySocVersion(socVersion);
-    std::string libPath = JoinPath({msopprofPath, "lib64"});
-    if (deviceType > DeviceType::ASCEND_910B_START && deviceType < DeviceType::ASCEND_910B_END) {
-        kernelPath = JoinPath({libPath, "dfx_kernel_dav-c220-cube.o"});
-    } else if (deviceType == DeviceType::ASCEND_310P) {
-        kernelPath = JoinPath({libPath, "dfx_kernel_dav-m200.o"});
-    } else {
-        DEBUG_LOG("Cannot find supported kernel when init DFXKernelLauncher.");
-    }
+    std::string kernelPath = JoinPath({msopprofPath, "lib64", objIter->second});
     return kernelPath;
 }
 
