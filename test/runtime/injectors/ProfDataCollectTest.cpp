@@ -529,7 +529,7 @@ TEST_F(ProfDataCollectTest, test_is_OperandRecord_need_gen_true)
     MOCKER(&KernelContext::GetMC2Flag).stubs().will(returnValue(false));
     MOCKER(&KernelContext::GetLcclFlag).stubs().will(returnValue(false));
     ProfConfig::Instance().isAppReplay_ = false;
-    ASSERT_FALSE(p.IsOperandRecordNeedGen("Ascend910_9599"));
+    ASSERT_TRUE(p.IsOperandRecordNeedGen("Ascend910_9599"));
     ProfConfig::Instance().isAppReplay_ = true;
     ProfConfig::Instance().Reset();
 }
