@@ -448,6 +448,8 @@ enum class InstrType {
     SCALAR_RED_BF16,
     SCALAR_RED_F32,
 
+    PIPE_BARRIER = 439,
+
     MAX
 };
 
