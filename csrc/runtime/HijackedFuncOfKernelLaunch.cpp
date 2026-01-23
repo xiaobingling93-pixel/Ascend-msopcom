@@ -126,11 +126,11 @@ void HijackedFuncOfKernelLaunch::ProfPre(const std::function<bool(void)> &func,
     KernelContext::LaunchEvent event;
     KernelContext::Instance().GetLaunchEvent(launchId_, event);
     profObj_->ProfInit(event.hdl, event.stubFunc); // pc_start落盘txt文件
+    profObj_->ProfData(stm, func);
     if (profObj_->IsBBCountNeedGen()) {
         refreshParamFunc_();
         bbCountTask(ProfDataCollect::GetAicoreOutputPath(devId_));
     }
-    profObj_->ProfData(stm, func);
 }
 
 void HijackedFuncOfKernelLaunch::SanitizerPre()
