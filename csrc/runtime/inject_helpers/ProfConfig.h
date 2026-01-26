@@ -26,7 +26,7 @@
 #include "core/BinaryInstrumentation.h"
 
 constexpr uint32_t PMU_EVENT_MAX_NUM = 8U;
-constexpr uint32_t EVENT_MAX_NUM = 64U;
+constexpr uint32_t EVENT_MAX_NUM = 96U;
 constexpr uint32_t PMU_EVENT_MAX_NUM_A5 = 10U;
 constexpr uint32_t EVENT_MAX_NUM_A5 = 60U;
 constexpr uint32_t UINT32_INVALID = UINT32_MAX;

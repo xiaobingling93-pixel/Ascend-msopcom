@@ -50,6 +50,7 @@ constexpr uint64_t MEM_SIZE = 0x1000U;
 */
 TEST(ProfTask, prof_task_factory_create_910B_310P_A5_task_and_expect_success)
 {
+    GlobalMockObject::verify();
     RuntimeOriginCtor();
     DeviceContext::Local().SetDeviceId(1);
     DeviceContext::Local().SetSocVersion("Ascend910B");
