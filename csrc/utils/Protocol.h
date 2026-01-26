@@ -437,6 +437,12 @@ struct IPCMemRecord {
     };
 };
 
+enum class DemangleMode : uint8_t {
+    FULL_DEMANGLED_NAME = 0,
+    SIMPLE_DEMANGLED_NAME,
+    MANGLED_NAME,
+};
+
 struct SanitizerConfig {
     bool defaultCheck;
     bool memCheck;
@@ -447,8 +453,10 @@ struct SanitizerConfig {
     bool checkCannHeap;
     bool leakCheck;
     bool checkUnusedMemory;
+    bool isPrintFullStack{false};
     int16_t checkBlockId = CHECK_ALL_BLOCK;
     uint32_t cacheSize = DEFAULT_CACHE_SIZE;
+    DemangleMode demangleMode{DemangleMode::FULL_DEMANGLED_NAME};
     char pluginPath[PLUGIN_PATH_MAX];
     char kernelName[KERNEL_NAME_MAX];
     char dumpPath[DUMP_PATH_MAX];
