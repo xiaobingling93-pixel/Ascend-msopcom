@@ -190,7 +190,7 @@ TEST(rtKernelLaunch, call_function_msprof_onboard_init_when_timeline_enable_expe
     std::string r = "";
     MOCKER(&ProfConfig::GetOutputPathFromRemote).stubs().will(returnValue(r));
     ProfConfig::Instance().profConfig_.isSimulator = false;
-    ProfConfig::Instance().profConfig_.timelineEnable = true;
+    ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_INSTR_PROF_END;
     const void * stubFunc = nullptr;
     uint32_t blockDim = 1;
     void *args = nullptr;

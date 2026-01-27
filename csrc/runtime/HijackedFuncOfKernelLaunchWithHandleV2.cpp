@@ -143,7 +143,7 @@ void HijackedFuncOfKernelLaunchWithHandleV2::ProfPost()
         uint64_t sizePerAllType = static_cast<uint32_t>(OperandType::END) * sizeof(OperandRecord) + SIMT_THREAD_GAP;
         memSize_ = sizeof(OperandHeader) + (sizePerAllType * 2049 + BLOCK_GAP) * GetCoreNumForDbi(blockDim_);
         DBITaskConfig::Instance().Init(BIType::CUSTOMIZE,
-            ProfConfig::Instance().GetPluginPath(PluginType::OPERAND_RECORD), {}, path);
+            ProfConfig::Instance().GetPluginPath(ProfDBIType::OPERAND_RECORD), {}, path);
         memInfo_ = InitMemory(memSize_);
         if (ExpandArgs(&newArgsInfo_, argsVec_, memInfo_, hostInput_, DBITaskConfig::Instance().argsSize_) &&
             RunDBITask(&hdl_, tilingKey_) && originfunc_ != nullptr) {

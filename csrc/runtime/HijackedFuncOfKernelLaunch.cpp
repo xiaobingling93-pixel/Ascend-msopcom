@@ -198,7 +198,7 @@ void HijackedFuncOfKernelLaunch::ProfPost()
         uint64_t sizePerAllType = static_cast<uint32_t>(OperandType::END) * sizeof(OperandRecord) + SIMT_THREAD_GAP;
         this->memSize_ = sizeof(OperandHeader) + (sizePerAllType * 2049 + BLOCK_GAP) *  GetCoreNumForDbi(blockDim_);
         DBITaskConfig::Instance().Init(BIType::CUSTOMIZE, ProfConfig::Instance().GetPluginPath(
-            PluginType::OPERAND_RECORD), {}, path);
+            ProfDBIType::OPERAND_RECORD), {}, path);
         memInfo_ = InitMemory(memSize_);
         if (ExpandArgs(args_, argsSize_, argsVec_, memInfo_) && RunDBITask(&stubFunc_) && originfunc_ != nullptr) {
             originfunc_(stubFunc_, blockDim_, args_, argsSize_, smDesc_, stm_);
@@ -278,8 +278,8 @@ void HijackedFuncOfKernelLaunch::Pre(const void *stubFunc, uint32_t blockDim, vo
     KernelMatcher::Config matchConfig;
     std::string path = GetEnv(DEVICE_PROF_DUMP_PATH_ENV);
     std::string pluginPath = mode == INSTR_PROF_MODE_BIU_PERF ?
-            ProfConfig::Instance().GetPluginPath(PluginType::INSTR_PROF_END) :
-            ProfConfig::Instance().GetPluginPath(PluginType::INSTR_PROF_START);
+            ProfConfig::Instance().GetPluginPath(ProfDBIType::INSTR_PROF_END) :
+            ProfConfig::Instance().GetPluginPath(ProfDBIType::INSTR_PROF_START);
     DBITaskConfig::Instance().Init(BIType::CUSTOMIZE, pluginPath, matchConfig, path, {START_STUB_COMPILER_ARGS});
     memInfo = InitMemory(memSize);
     if (!ExpandArgs(this->args_, this->argsSize_, this->argsVec_, memInfo) || !RunDBITask(&this->stubFunc_)) {

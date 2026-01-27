@@ -1722,11 +1722,10 @@ bool ProfDataCollect::IsNeedProf()
 bool ProfDataCollect::IsBBCountNeedGen()
 {
     auto config = ProfConfig::Instance().GetConfig();
-    return (config.isSource &&
+    return ((config.dbiFlag & DBI_FLAG_BB_COUNT) &&
         IsNeedProf() &&
         !KernelContext::Instance().GetMC2Flag() &&
-        !KernelContext::Instance().GetLcclFlag() &&
-        (ProfConfig::Instance().GetBIType() == BIType::BB_COUNT || !ProfConfig::Instance().IsAppReplay()));
+        !KernelContext::Instance().GetLcclFlag());
 }
 
 bool ProfDataCollect::IsNeedDumpContext()
@@ -1738,27 +1737,29 @@ bool ProfDataCollect::IsNeedDumpContext()
 bool ProfDataCollect::IsMemoryChartNeedGen()
 {
     auto config = ProfConfig::Instance().GetConfig();
-    return (config.isMemoryDetail &&
+    return ((config.dbiFlag & DBI_FLAG_MEMORY_CHART) &&
         IsNeedProf() &&
         !KernelContext::Instance().GetMC2Flag() &&
-        !KernelContext::Instance().GetLcclFlag() &&
-        (ProfConfig::Instance().GetBIType() == BIType::CUSTOMIZE || !ProfConfig::Instance().IsAppReplay()));
+        !KernelContext::Instance().GetLcclFlag());
 }
 
 bool ProfDataCollect::IsOperandRecordNeedGen(const std::string &socVersion)
 {
+    auto config = ProfConfig::Instance().GetConfig();
     auto chipType = GetProductTypeBySocVersion(socVersion);
-    return (IsNeedProf() && IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND910_95_SERIES) &&
-            !KernelContext::Instance().GetMC2Flag() &&
-            !KernelContext::Instance().GetLcclFlag() &&
-            (ProfConfig::Instance().GetBIType() == BIType::CUSTOMIZE || !ProfConfig::Instance().IsAppReplay()) &&
-            !ProfConfig::Instance().IsRangeReplay());
+    return ((config.dbiFlag & DBI_FLAG_OPERAND_RECORD) &&
+        IsNeedProf() && IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND910_95_SERIES) &&
+        !KernelContext::Instance().GetMC2Flag() &&
+        !KernelContext::Instance().GetLcclFlag() &&
+        !ProfConfig::Instance().IsRangeReplay());
 }
 
 bool ProfDataCollect::IsNeedRunOriginLaunch()
 {
-    return (!IsNeedProf() || !((!ProfConfig::Instance().IsOnlyRunDBITask() && ProfConfig::Instance().IsAppReplay()) ||
-        KernelContext::Instance().GetMC2Flag() || KernelContext::Instance().GetLcclFlag()));
+    // application模式下只有bbcount桩才需要调用origin，其他模式都不需要，因为bbcount桩需要依赖Call这次运行。
+    // 所有通算融合算子都不需要调用origin
+    return (!IsNeedProf() || !((ProfConfig::Instance().GetConfig().dbiFlag != DBI_FLAG_BB_COUNT && ProfConfig::Instance().IsAppReplay()) ||
+                               KernelContext::Instance().GetMC2Flag() || KernelContext::Instance().GetLcclFlag()));
 }
 
 void ProfDataCollect::GenDBIData(uint64_t memSize, uint8_t *memInfo)

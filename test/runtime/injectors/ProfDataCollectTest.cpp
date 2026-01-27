@@ -480,9 +480,9 @@ TEST_F(ProfDataCollectTest, save_object_success_ctx)
 TEST_F(ProfDataCollectTest, test_is_bbcount_need_gen_false)
 {
     ProfDataCollect p;
-    ProfConfig::Instance().profConfig_.isSource = false;
+    ProfConfig::Instance().profConfig_.dbiFlag = 0;
     ASSERT_FALSE(p.IsBBCountNeedGen());
-    ProfConfig::Instance().profConfig_.isSource = true;
+    ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_BB_COUNT;
     MOCKER(&ProfDataCollect::IsNeedProf).stubs().will(returnValue(false));
     ASSERT_FALSE(p.IsMemoryChartNeedGen());
     MOCKER(&KernelContext::SetMC2Flag).stubs().will(returnValue(true));
@@ -497,12 +497,11 @@ TEST_F(ProfDataCollectTest, test_is_bbcount_need_gen_false)
 TEST_F(ProfDataCollectTest, test_is_bbcount_need_gen_true)
 {
     ProfDataCollect p;
-    ProfConfig::Instance().profConfig_.isSource = true;
+    ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_BB_COUNT;
     MOCKER(&ProfDataCollect::IsNeedProf).stubs().will(returnValue(true));
     MOCKER(&KernelContext::SetMC2Flag).stubs().will(returnValue(false));
     MOCKER(&KernelContext::GetLcclFlag).stubs().will(returnValue(false));
     ProfConfig::Instance().isAppReplay_ = false;
-    ProfConfig::Instance().profConfig_.biType = BIType::BB_COUNT;
     ASSERT_TRUE(p.IsBBCountNeedGen());
     ProfConfig::Instance().isAppReplay_ = true;
     ProfConfig::Instance().Reset();
@@ -528,6 +527,7 @@ TEST_F(ProfDataCollectTest, test_is_OperandRecord_need_gen_true)
     MOCKER(&ProfDataCollect::IsNeedProf).stubs().will(returnValue(true));
     MOCKER(&KernelContext::GetMC2Flag).stubs().will(returnValue(false));
     MOCKER(&KernelContext::GetLcclFlag).stubs().will(returnValue(false));
+    ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_OPERAND_RECORD;
     ProfConfig::Instance().isAppReplay_ = false;
     ASSERT_TRUE(p.IsOperandRecordNeedGen("Ascend910_9599"));
     ProfConfig::Instance().isAppReplay_ = true;
@@ -537,9 +537,9 @@ TEST_F(ProfDataCollectTest, test_is_OperandRecord_need_gen_true)
 TEST_F(ProfDataCollectTest, test_is_memory_chart_need_gen_false)
 {
     ProfDataCollect p;
-    ProfConfig::Instance().profConfig_.isMemoryDetail = false;
+    ProfConfig::Instance().profConfig_.dbiFlag = 0;
     ASSERT_FALSE(p.IsMemoryChartNeedGen());
-    ProfConfig::Instance().profConfig_.isMemoryDetail = true;
+    ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_MEMORY_CHART;
     MOCKER(&ProfDataCollect::IsNeedProf).stubs().will(returnValue(false));
     ASSERT_FALSE(p.IsMemoryChartNeedGen());
     MOCKER(&KernelContext::SetMC2Flag).stubs().will(returnValue(true));
@@ -554,12 +554,11 @@ TEST_F(ProfDataCollectTest, test_is_memory_chart_need_gen_false)
 TEST_F(ProfDataCollectTest, test_is_memory_chart_need_gen_true)
 {
     ProfDataCollect p;
-    ProfConfig::Instance().profConfig_.isMemoryDetail = true;
+    ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_MEMORY_CHART;
     MOCKER(&ProfDataCollect::IsNeedProf).stubs().will(returnValue(true));
     MOCKER(&KernelContext::SetMC2Flag).stubs().will(returnValue(false));
     MOCKER(&KernelContext::GetLcclFlag).stubs().will(returnValue(false));
     ProfConfig::Instance().isAppReplay_ = false;
-    ProfConfig::Instance().profConfig_.biType = BIType::BB_COUNT;
     ASSERT_TRUE(p.IsMemoryChartNeedGen());
     ProfConfig::Instance().isAppReplay_ = true;
     ProfConfig::Instance().Reset();

@@ -238,18 +238,18 @@ bool ProfConfig::PostNotify(ProcessCtrl::Rsp &rsp)
     return true;
 }
 
-std::string ProfConfig::GetPluginPath(PluginType pluginType) const
+std::string ProfConfig::GetPluginPath(ProfDBIType pluginType) const
 {
     std::string opprofPath = GetMsopprofPath();
     if (opprofPath.empty()) {
         return "";
     }
     std::string pluginPath = "libprofplugin_memorychart.so";
-    if (pluginType == PluginType::INSTR_PROF_END) {
+    if (pluginType == ProfDBIType::INSTR_PROF_END) {
         pluginPath = "libprofplugin_instrprofend.so";
-    } else if (pluginType == PluginType::INSTR_PROF_START) {
+    } else if (pluginType == ProfDBIType::INSTR_PROF_START) {
         pluginPath = "libprofplugin_instrprofstart.so";
-    } else if (pluginType == PluginType::OPERAND_RECORD) {
+    } else if (pluginType == ProfDBIType::OPERAND_RECORD) {
         pluginPath = "libprofplugin_operandrecord.so";
     }
     return JoinPath({opprofPath, "lib64", pluginPath});

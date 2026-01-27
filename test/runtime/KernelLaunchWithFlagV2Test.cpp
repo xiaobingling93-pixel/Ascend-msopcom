@@ -216,7 +216,7 @@ TEST(rtKernelLaunchWithFlagV2, call_function_msprof_simulator_init_when_timeline
     rtArgsEx_t argsInfo;
 
     ProfConfig::Instance().profConfig_.isSimulator = false;
-    ProfConfig::Instance().profConfig_.timelineEnable = true;
+    ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_INSTR_PROF_END;
     instance.Pre(nullptr, 1, &argsInfo, nullptr, nullptr, 1, nullptr);
     auto ret = instance.Post(RT_ERROR_NONE);
     ASSERT_EQ(ret, RT_ERROR_NONE);

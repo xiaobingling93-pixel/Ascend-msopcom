@@ -326,8 +326,7 @@ TEST(ProfTask, test_prof_task_A5_start_and_expect_return_true)
     DeviceContext::Local().SetDeviceId(1);
     DeviceContext::Local().SetSocVersion("Ascend910_9589");
     std::unique_ptr<ProfTask> task = ProfTaskFactory::Create();
-    ProfConfig::Instance().profConfig_.timelineEnable = false;
-    ProfConfig::Instance().profConfig_.pcSamplingEnable = false;
+    ProfConfig::Instance().profConfig_.dbiFlag = 0;
     ASSERT_TRUE(task != nullptr);
     MOCKER(prof_drv_start_origin)
             .stubs()
@@ -353,8 +352,7 @@ TEST(ProfTask, test_A5_start_instr_task_when_timeline_enable_then_return_true)
     DeviceContext::Local().SetSocVersion("Ascend910_9589");
     std::unique_ptr<ProfTask> task = ProfTaskFactory::Create();
     ASSERT_TRUE(task != nullptr);
-    ProfConfig::Instance().profConfig_.timelineEnable = true;
-    ProfConfig::Instance().profConfig_.pcSamplingEnable = false;
+    ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_INSTR_PROF_END;
     MOCKER(prof_drv_start_origin)
             .stubs()
             .will(returnValue(0));
@@ -379,8 +377,7 @@ TEST(ProfTask, test_A5_start_instr_task_when_pcSampling_enable_then_return_true)
     DeviceContext::Local().SetSocVersion("Ascend910_9589");
     std::unique_ptr<ProfTask> task = ProfTaskFactory::Create();
     ASSERT_TRUE(task != nullptr);
-    ProfConfig::Instance().profConfig_.timelineEnable = false;
-    ProfConfig::Instance().profConfig_.pcSamplingEnable = true;
+    ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_INSTR_PROF_START;
     MOCKER(prof_drv_start_origin)
             .stubs()
             .will(returnValue(0));
@@ -408,7 +405,7 @@ TEST(ProfTask, test_A5_start_instr_task_when_start_task_failed_then_return_false
     MOCKER(prof_drv_start_origin)
         .stubs()
         .will(returnValue(1));
-    ProfConfig::Instance().profConfig_.timelineEnable = true;
+    ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_INSTR_PROF_END;
     ASSERT_FALSE(task->Start(0));
     GlobalMockObject::verify();
 }
@@ -449,14 +446,14 @@ TEST(ProfTask, test_A5_channel_read_when_timeline_or_pcsampling_enabled_and_expe
         .stubs()
         .will(returnValue(path));
     ASSERT_TRUE(MkdirRecusively(path));
-    ProfConfig::Instance().profConfig_.timelineEnable = true;
+    ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_INSTR_PROF_END;
     task->Start(0);
     task->profRunning_ = false;
     task->ChannelRead();
     string filePath = JoinPath({path, "timeline.bin.0"});
     task->Stop();
     ASSERT_TRUE(!IsPathExists(filePath));
-    ProfConfig::Instance().profConfig_.pcSamplingEnable = true;
+    ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_INSTR_PROF_START;
     task->Start(0);
     task->profRunning_ = false;
     task->ChannelRead();

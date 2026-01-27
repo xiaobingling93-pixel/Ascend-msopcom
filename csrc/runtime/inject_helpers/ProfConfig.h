@@ -63,12 +63,21 @@ struct InstrChnReadCtrl {
     uint32_t InstrProfReadSize = 0;
 };
 
-enum class PluginType {
-    MEMORY_CHART = 0,
-    INSTR_PROF_START,
-    OPERAND_RECORD,
-    INSTR_PROF_END,
+enum class ProfDBIType {
+    AS_IS = 0, // 不插装 
+    OPERAND_RECORD, // operand record桩
+    MEMORY_CHART, // memory chart桩
+    INSTR_PROF_START, // start桩
+    INSTR_PROF_END, // end桩
+    BB_COUNT // bb count桩
 };
+
+constexpr uint32_t DBI_FLAG_OPERAND_RECORD = 1U << static_cast<uint32_t>(ProfDBIType::OPERAND_RECORD);
+constexpr uint32_t DBI_FLAG_MEMORY_CHART = 1U << static_cast<uint32_t>(ProfDBIType::MEMORY_CHART);
+constexpr uint32_t DBI_FLAG_INSTR_PROF_START = 1U << static_cast<uint32_t>(ProfDBIType::INSTR_PROF_START);
+constexpr uint32_t DBI_FLAG_INSTR_PROF_END = 1U << static_cast<uint32_t>(ProfDBIType::INSTR_PROF_END);
+constexpr uint32_t DBI_FLAG_BB_COUNT = 1U << static_cast<uint32_t>(ProfDBIType::BB_COUNT);
+
 struct OperandRecord {
     uint64_t instructions{};
     uint64_t operands{};
@@ -125,6 +134,7 @@ struct OperandHeader {
 struct MessageOfProfConfig {
     MstxProfConfig mstxProfConfig { };
     uint32_t replayCount {UINT32_INVALID};
+    uint32_t dbiFlag {0};
     uint16_t profWarmUpTimes {0};
     uint16_t aicPmu[EVENT_MAX_NUM]{};
     uint16_t aivPmu[EVENT_MAX_NUM]{};
@@ -134,12 +144,7 @@ struct MessageOfProfConfig {
     bool killAdvance {false};
     bool isDeviceToSimulator {false};
     bool isSimulator {false};
-    bool isSource {false};
-    bool isMemoryDetail {false};
     bool pmSamplingEnable {false};
-    bool timelineEnable {false};
-    bool pcSamplingEnable {false};
-    BIType biType {BIType::MAX}; // Dynamic Instrumentation Related Types
 };
 
 enum class ReplayMode : uint8_t {
@@ -216,21 +221,17 @@ public:
 
     bool IsRangeReplay() const { return isRangeReplay_; }
 
-    BIType GetBIType() const { return profConfig_.biType; }
-
-    bool IsOnlyRunDBITask() const { return profConfig_.biType != BIType::MAX; }
-
     bool IsSimulator() const { return profConfig_.isSimulator; }
 
     bool IsEnablePmSampling() const { return profConfig_.pmSamplingEnable; }
 
-    bool IsTimelineEnabled() const {return profConfig_.timelineEnable;}
+    bool IsTimelineEnabled() const { return profConfig_.dbiFlag & DBI_FLAG_INSTR_PROF_END;}
 
-    bool IsPCSamplingEnabled() const {return profConfig_.pcSamplingEnable;}
+    bool IsPCSamplingEnabled() const {return profConfig_.dbiFlag & DBI_FLAG_INSTR_PROF_START;}
 
     bool IsDbi() const
     {
-        return  (profConfig_.biType == BIType::BB_COUNT || profConfig_.biType == BIType::CUSTOMIZE);
+        return isAppReplay_ && (profConfig_.dbiFlag & ~DBI_FLAG_INSTR_PROF_END) != 0;
     }
 
     void RequestLogTranslate(const std::string &outputPath, const std::string &kernelName);
@@ -252,7 +253,7 @@ public:
 
     bool IsSimulatorLaunchedByDevice() const;
 
-    std::string GetPluginPath(PluginType pluginType = PluginType::MEMORY_CHART) const;
+    std::string GetPluginPath(ProfDBIType pluginType = ProfDBIType::MEMORY_CHART) const;
 
     void SendMsg(const std::string &msg);
 

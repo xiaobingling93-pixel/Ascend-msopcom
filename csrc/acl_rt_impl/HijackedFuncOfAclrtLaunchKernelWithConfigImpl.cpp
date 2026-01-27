@@ -229,7 +229,7 @@ void HijackedFuncOfAclrtLaunchKernelWithConfigImpl::DoOperandRecord()
     KernelMatcher::Config matchConfig;
     std::string path = GetEnv(DEVICE_PROF_DUMP_PATH_ENV);
     DBITaskConfig::Instance().Init(BIType::CUSTOMIZE,
-                                   ProfConfig::Instance().GetPluginPath(PluginType::OPERAND_RECORD), matchConfig, path);
+                                   ProfConfig::Instance().GetPluginPath(ProfDBIType::OPERAND_RECORD), matchConfig, path);
     aclrtSynchronizeStreamImplOrigin(stream_);
     refreshParamFunc_();
     uint64_t sizePerAllType = static_cast<uint32_t>(OperandType::END) * sizeof(OperandRecord) + SIMT_THREAD_GAP;
