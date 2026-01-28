@@ -447,6 +447,7 @@ enum class InstrType {
     SCALAR_RED_F16,
     SCALAR_RED_BF16,
     SCALAR_RED_F32,
+    PIPE_BARRIER = 439,
     SET_FLAG = 440,
     SET_FLAGI,
     WAIT_FLAG,
@@ -463,8 +464,11 @@ enum class InstrType {
     SET_INTRA_BLOCKI,
     WAIT_INTRA_BLOCK,
     WAIT_INTRA_BLOCKI,
+    SET_FLAG_V,
+    SET_FLAGI_V,
+    WAIT_FLAG_V,
+    WAIT_FLAGI_V,
 
-    PIPE_BARRIER = 439,
 
     MAX
 };
