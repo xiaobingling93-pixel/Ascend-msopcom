@@ -263,22 +263,24 @@ MemRegionsBelongInfo MsTx::MstxMemRegionsRegister(MstxDomainRegistration *domain
         ERROR_LOG("domain does not exist, please see the api for creating a domain in the description document");
         return {};
     }
-    if (desc == nullptr || desc->heap == nullptr || desc->regionDescArray == nullptr ||
-        desc->regionHandleArrayOut == nullptr) {
+    if (desc == nullptr || desc->regionDescArray == nullptr || desc->regionHandleArrayOut == nullptr) {
         ERROR_LOG("desc is illegal, please create a desc or replace it with an existing desc");
         return {};
     }
     std::pair<MstxDomainRegistration *, MstxMemHeap *> key = {domain, desc->heap};
     auto it = mstxDomainMemHeapDescMap_.find(key);
-    if (it == mstxDomainMemHeapDescMap_.end()) {
+    if (desc->heap != nullptr && it == mstxDomainMemHeapDescMap_.end()) {
         ERROR_LOG("heap is unregister, please run mstxMemHeapRegister to return this heap");
         return {};
     }
 
     MemRegionsBelongInfo info{};
     info.success = true;
-    info.addr = reinterpret_cast<uint64_t>(it->second.rangeDesc.ptr);
-    info.size = it->second.rangeDesc.size;
+    if (it != mstxDomainMemHeapDescMap_.end()) {
+        info.addr = reinterpret_cast<uint64_t>(it->second.rangeDesc.ptr);
+        info.size = it->second.rangeDesc.size;
+    }
+
     auto &regionsVec = mstxDomainRegionsMap_[domain];
     for (size_t i = 0; i < desc->regionCount; ++i) {
         regionsVec.push_back(MakeUnique<MstxMemRegion>());

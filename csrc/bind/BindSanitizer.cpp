@@ -367,7 +367,7 @@ void MstxMemRegionsRegister(MstxDomainRegistration* domain, MstxMemRegionsRegist
                 ERROR_LOG("The addr or size of regions is 0, addr:%lx size:%lu", record.dstAddr, record.memSize);
                 continue;
             }
-            if (IsAddrInRange(record, ret.addr, ret.size)) {
+            if (desc->heap == nullptr || IsAddrInRange(record, ret.addr, ret.size)) {
                 MemoryManage::Instance().CacheMemory<MemoryOpType::MALLOC>(record.dstAddr,
                     record.infoSrc, record.memSize);
                 LocalDevice::GetInstance(static_cast<int32_t>(rangeDesc[i].deviceId)).Notify(Serialize(head, record));
