@@ -65,6 +65,11 @@ public:
     /// 解析二级指针地址信息，index表示位于args中的第几个入参
     void ParseSecondPtrAddrs(const AclrtLaunchArgsInfo &launchArgs, OpMemInfo &opMemInfo, uint32_t index) const;
 
+    /// 设置算子的argsSize
+    void SetArgsSize(uint32_t argSize) { argsSize_ = argSize; }
+    /// 获取算子的argsSize
+    uint32_t GetArgsSize() const { return argsSize_; }
+
     /// 入参为mc2_context内存地址, need multi device card
 #if defined (__BUILD_TESTS__)
     void Clear()
@@ -73,6 +78,7 @@ public:
         atomicIndexToAddr_.clear();
         isThroughAdump_ = true;
         latestAtomicIndex_ = 0;
+         argsSize_ = 0;
     }
 #endif
 
@@ -82,4 +88,5 @@ private:
     uint64_t latestAtomicIndex_{0};
     mutable std::mutex adumpInfoMtx_;
     bool isThroughAdump_{true};    // 算子运行时是否经过了adump开关
+    uint32_t argsSize_{};
 };

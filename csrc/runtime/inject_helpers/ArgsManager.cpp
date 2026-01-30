@@ -146,6 +146,7 @@ ArgsContextSP ArgsManager::CreateContext(void *args, uint32_t argsSize, bool isD
     if (args == nullptr || argsSize == 0) {
         return nullptr;
     }
+    SetArgsSize(argsSize);
     auto ctx = make_shared<ArgsRawContext>(args, argsSize, isDeviceArgs);
     contexts_[args] = ctx;
     return ctx;
@@ -156,6 +157,7 @@ ArgsContextSP ArgsManager::CreateContext(void *args, uint32_t argsSize, const st
     if (args == nullptr || argsSize == 0) {
         return nullptr;
     }
+    SetArgsSize(argsSize);
     auto ctx = make_shared<ArgsRawContext>(args, argsSize, placeHolderArray);
     contexts_[args] = ctx;
     return ctx;

@@ -32,6 +32,7 @@
 #include "runtime/inject_helpers/LocalDevice.h"
 #include "runtime/inject_helpers/RegisterContext.h"
 #include "runtime/inject_helpers/MemoryDataCollect.h"
+#include "runtime/inject_helpers/ArgsManager.h"
 #include "utils/InjectLogger.h"
 #include "core/PlatformConfig.h"
 #include "runtime.h"
@@ -605,6 +606,14 @@ bool InitSimtBlockInfo(RecordGlobalHead &recordGlobalHead, uint8_t *&memInfo, si
     return true;
 }
 
+inline bool InAclNewLaunchCallStack()
+{
+    return
+        HijackedLayerManager::Instance().InCallStack("aclrtLaunchKernelImpl") ||
+        HijackedLayerManager::Instance().InCallStack("aclrtLaunchKernelWithConfigImpl") ||
+        HijackedLayerManager::Instance().InCallStack("aclrtLaunchKernelWithHostArgsImpl");
+}
+
 bool InitRecordHeaders(RecordGlobalHead &recordGlobalHead, uint8_t *memInfo, uint32_t hostMemoryNum)
 {
     aclError error;
@@ -621,7 +630,11 @@ bool InitRecordHeaders(RecordGlobalHead &recordGlobalHead, uint8_t *memInfo, uin
     }
 
     RecordBlockHead recordBlockHead{};
-    recordBlockHead.registers.paraBase.size = KernelContext::Instance().GetArgsSize();
+    if (InAclNewLaunchCallStack()) {
+ 	    recordBlockHead.registers.paraBase.size = ArgsManager::Instance().GetArgsSize();
+ 	} else {
+ 	    recordBlockHead.registers.paraBase.size = KernelContext::Instance().GetArgsSize();
+ 	}
     recordBlockHead.hostMemoryNum = hostMemoryNum;
     uint64_t blockHeadOffset = 0UL;
     std::vector<HostMemoryInfo> hostMems = CopyExtraMallocToHostMemory();
@@ -649,14 +662,6 @@ bool InitRecordHeaders(RecordGlobalHead &recordGlobalHead, uint8_t *memInfo, uin
         UpdateBlockHeadOffset(recordGlobalHead.checkParms, blockIdx, hostMemoryNum, blockHeadOffset);
     }
     return true;
-}
-
-inline bool InAclNewLaunchCallStack()
-{
-    return
-        HijackedLayerManager::Instance().InCallStack("aclrtLaunchKernelImpl") ||
-        HijackedLayerManager::Instance().InCallStack("aclrtLaunchKernelWithConfigImpl") ||
-        HijackedLayerManager::Instance().InCallStack("aclrtLaunchKernelWithHostArgsImpl");
 }
 
 } // namespace [Dummy]
