@@ -50,7 +50,7 @@ TEST_F(HijackedFuncOfAclrtLaunchKernelTest, input_nullptr_then_test_call_expect_
     testing::internal::CaptureStdout();
     ASSERT_EQ(inst.Call(nullptr, 3, nullptr, 0, 0), ACL_SUCCESS);
     string capture = testing::internal::GetCapturedStdout();
-    ASSERT_NE(capture.find("ERROR"), std::string::npos);
+    ASSERT_EQ(capture.find("ERROR"), std::string::npos);
 }
 
 TEST_F(HijackedFuncOfAclrtLaunchKernelTest, call_function_msprof_simulator_init)

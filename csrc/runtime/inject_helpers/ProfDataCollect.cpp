@@ -1016,13 +1016,13 @@ bool DataCollectInDevice::ReplayOnce(rtStream_t stream, const std::function<bool
         return true;
     }
     DEBUG_LOG("Replaying round on device %d No. %d time", deviceId_, replayCount_ + 1);
+    if (!ProfConfig::Instance().IsAppReplay() && isClearParamSuccess_ && !ClearL2Cache(param)) {
+        WARN_LOG("Clear L2Cache failed. replay count is %d", replayCount_ + 1);
+    }
     if (!isMC2 && !ProfConfig::Instance().IsAppReplay() && !KernelContext::Instance().GetLcclFlag() &&
         !MemoryContext::Instance().Restore()) {
         WARN_LOG("Replay data restore failed. Skipping %d", replayCount_ + 1);
         return false;
-    }
-    if (!ProfConfig::Instance().IsAppReplay() && isClearParamSuccess_ && !ClearL2Cache(param)) {
-        WARN_LOG("Clear L2Cache failed. replay count is %d", replayCount_ + 1);
     }
     if (!StartProf(readThread_)) {
         StopProf();
@@ -1203,7 +1203,7 @@ bool DataCollectInDevice::RangeReplayInit(bool &needReplay)
         return true;
     }
     ProfDataCollect::ResetRangeConfig(threadId);
-    string replayPath = JoinPath({GetEnv(DEVICE_PROF_DUMP_PATH_ENV), "device" + to_string(deviceId_), to_string(rangeConfig.count)});
+    string replayPath = JoinPath({GetEnv(DEVICE_PROF_DUMP_PATH_ENV), "device" + to_string(deviceId_), to_string(getpid()), to_string(rangeConfig.count)});
     if (!MkdirRecusively(replayPath)) {
         ERROR_LOG("Mkdir device %d range replay temp path failed.", deviceId_);
         return false;
@@ -1238,12 +1238,12 @@ bool DataCollectInDevice::RangeReplayInit(bool &needReplay)
 
 bool DataCollectInDevice::RangeReplayOnce(L2cacheParam &param, const aclmdlRI &modelRI)
 {
+    if (isClearParamSuccess_ && !ClearL2Cache(param)) {
+        WARN_LOG("Clear L2Cache failed. replay count is %d", replayCount_ + 1);
+    }
     if (!MemoryContext::Instance().Restore()) {
         WARN_LOG("Replay data restore failed. Skipping %d", replayCount_ + 1);
         return false;
-    }
-    if (isClearParamSuccess_ && !ClearL2Cache(param)) {
-        WARN_LOG("Clear L2Cache failed. replay count is %d", replayCount_ + 1);
     }
     if (!StartProf(readThread_)) {
         StopProf();
@@ -1281,8 +1281,8 @@ bool DataCollectInDevice::RangeReplay(const rtStream_t &stream, const aclmdlRI &
     if (!needReplay) {
         return true;
     }
-    WarmUp(stream, modelRI);
     MemoryContext::Instance().Backup();
+    WarmUp(stream, modelRI);
     L2cacheParam param {};
     param.blockLen = nullptr;
     param.l2Buffer = nullptr;

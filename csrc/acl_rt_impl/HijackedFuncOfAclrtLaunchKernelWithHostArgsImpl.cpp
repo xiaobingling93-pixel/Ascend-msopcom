@@ -82,7 +82,7 @@ bool HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl::InitParam(
     argsCtx_ = ArgsManager::Instance().CreateContext(hostArgs, argsSize, placeHolderArray_);
     launchCtx_ = LaunchManager::Local().CreateContext(funcHandle, blockDim, stream, argsCtx_);
     if (launchCtx_ == nullptr) {
-        ERROR_LOG("Create launch context failed");
+        DEBUG_LOG("Create launch context failed");
         return false;
     }
     funcCtx_ = launchCtx_->GetFuncContext();
@@ -148,7 +148,7 @@ void HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl::Pre(aclrtFuncHandle funcHa
 {
     if (!InitParam(funcHandle, blockDim, stream, cfg,
                    hostArgs, argsSize, placeHolderArray, placeHolderNum)) {
-        ERROR_LOG("Invalid param, stop hijack this launch.");
+        DEBUG_LOG("Invalid param, stop hijack this launch.");
         return;
     }
     auto bbCountTask = [this](const std::string &outputPath = "") {

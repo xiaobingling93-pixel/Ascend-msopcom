@@ -812,7 +812,7 @@ TEST_F(ProfDataCollectTest, RangeReplay_pmu_empty_expect_false)
     aclmdlRI modelRI = nullptr;
     rtStream_t stream = nullptr;
     ASSERT_FALSE(collect.RangeReplay(stream, modelRI));
-    ASSERT_EQ(ProfDataCollect::GetAicoreOutputPath(0), "./tmp/device0/0");
+    ASSERT_EQ(ProfDataCollect::GetAicoreOutputPath(0), "./tmp/device0/" + std::to_string(getpid()) + "/0");
     RemoveAll(tmpPath);
 }
 
@@ -838,8 +838,8 @@ TEST_F(ProfDataCollectTest, RangeReplay_prof_success_expect_true)
     aclmdlRI modelRI = nullptr;
     rtStream_t stream = nullptr;
     ASSERT_TRUE(collect.RangeReplay(stream, modelRI));
-    ASSERT_TRUE(IsPathExists("./tmp/device0/0/output.txt"));
-    ASSERT_TRUE(IsPathExists("./tmp/device0/0/freq.txt"));
+    ASSERT_TRUE(IsPathExists("./tmp/device0/" + std::to_string(getpid()) + "/0/output.txt"));
+    ASSERT_TRUE(IsPathExists("./tmp/device0/" + std::to_string(getpid()) + "/0/freq.txt"));
     RemoveAll(tmpPath);
 }
 
