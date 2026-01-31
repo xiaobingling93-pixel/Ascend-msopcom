@@ -44,7 +44,9 @@ void HijackedAscendclImplCtor()
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtSetDeviceImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtResetDeviceImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtMallocImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtMallocHostImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtFreeImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtFreeHostImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtMemsetImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtMemcpyImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtMapMemImpl);
@@ -600,11 +602,25 @@ aclError aclrtMallocImpl(void **devPtr, size_t size, aclrtMemMallocPolicy policy
     return instance.Call(devPtr, size, policy);
 }
 
+aclError aclrtMallocHostImpl(void **hostPtr, size_t size)
+{
+    LayerGuard guard(HijackedLayerManager::Instance(), __func__);
+    HijackedFuncOfAclrtMallocHostImpl instance;
+    return instance.Call(hostPtr, size);
+}
+
 aclError aclrtFreeImpl(void *devPtr)
 {
     LayerGuard guard(HijackedLayerManager::Instance(), __func__);
     HijackedFuncOfAclrtFreeImpl instance;
     return instance.Call(devPtr);
+}
+
+aclError aclrtFreeHostImpl(void *hostPtr)
+{
+    LayerGuard guard(HijackedLayerManager::Instance(), __func__);
+    HijackedFuncOfAclrtFreeHostImpl instance;
+    return instance.Call(hostPtr);
 }
 
 aclError aclrtMemsetImpl(void *devPtr, size_t maxCount, int32_t value, size_t count)

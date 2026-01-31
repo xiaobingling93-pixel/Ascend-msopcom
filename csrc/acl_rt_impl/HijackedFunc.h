@@ -99,11 +99,30 @@ private:
     aclrtMemMallocPolicy policy_ {aclrtMemMallocPolicy::ACL_MEM_MALLOC_HUGE_FIRST};
 };
 
+class HijackedFuncOfAclrtMallocHostImpl : public decltype(AscendclImpHijackedType(&aclrtMallocHostImpl)) {
+public:
+    explicit HijackedFuncOfAclrtMallocHostImpl();
+    ~HijackedFuncOfAclrtMallocHostImpl() override = default;
+    void Pre(void **hostPtr, size_t size) override;
+    aclError Post(aclError ret) override;
+
+private:
+    void **hostPtr_{nullptr};
+    size_t size_{0};
+};
+
 class HijackedFuncOfAclrtFreeImpl : public decltype(AscendclImpHijackedType(&aclrtFreeImpl)) {
 public:
     explicit HijackedFuncOfAclrtFreeImpl();
     ~HijackedFuncOfAclrtFreeImpl() override = default;
     void Pre(void *devPtr) override;
+};
+
+class HijackedFuncOfAclrtFreeHostImpl : public decltype(AscendclImpHijackedType(&aclrtFreeHostImpl)) {
+public:
+    explicit HijackedFuncOfAclrtFreeHostImpl();
+    ~HijackedFuncOfAclrtFreeHostImpl() override = default;
+    void Pre(void *hostPtr) override;
 };
 
 class HijackedFuncOfAclrtMemsetImpl : public decltype(AscendclImpHijackedType(&aclrtMemsetImpl)) {

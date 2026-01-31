@@ -5,7 +5,9 @@ file(GLOB INJECTION_SRC
     HijackedFuncOfAclrtResetDeviceImpl.cpp
     HijackedFuncOfAclrtMallocImpl.cpp
     HijackedFuncOfAclrtMallocCachedImpl.cpp
+    HijackedFuncOfAclrtMallocHostImpl.cpp
     HijackedFuncOfAclrtFreeImpl.cpp
+    HijackedFuncOfAclrtFreeHostImpl.cpp
     HijackedFuncOfAclrtMemsetImpl.cpp
     HijackedFuncOfAclrtMemsetAsyncImpl.cpp
     HijackedFuncOfAclrtMemcpyImpl.cpp
