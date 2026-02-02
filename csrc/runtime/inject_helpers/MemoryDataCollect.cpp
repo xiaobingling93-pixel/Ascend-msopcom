@@ -366,14 +366,15 @@ void ReportOpMallocInfo(const AclrtLaunchArgsInfo &launchArgs, OpMemInfo &opMemI
     }
     for (uint64_t address : order) {
         if (addrMap[address].addr != 0x00 && addrMap[address].length != 0x00) {
-            opMemInfo.uniqueAddrInfos.push_back({address, addrMap[address].length, addrMap[address].memInfoSrc});
+            const auto &iter = addrMap[address];
+            opMemInfo.uniqueAddrInfos.push_back({address, iter.length, iter.memInfoSrc, iter.memInfoDesc, iter.paramsNo});
         }
     }
 
     for (const auto &it : opMemInfo.uniqueAddrInfos) {
-        ReportMalloc(it.addr, it.length, it.memInfoSrc);
+        ReportMalloc(it.addr, it.length, it.memInfoSrc, it.memInfoDesc, it.paramsNo);
         // 内存分配是通过获取tensor信息模拟的，无实际的桩函数记录，因此需要设为STORE，防止未初始化读误报
-        ReportMemset(it.addr, it.length, it.memInfoSrc);
+        ReportMemset(it.addr, it.length, it.memInfoSrc, it.memInfoDesc, it.paramsNo);
     }
 
     /// 所有placeHolderArray中最大的addrOffset对应的是tilingAddr地址偏移，此时的dataOffset为tilingData偏移
@@ -393,9 +394,9 @@ void ReportOpMallocInfo(const AclrtLaunchArgsInfo &launchArgs, OpMemInfo &opMemI
     // tilling信息总是通过RtKernelLaunchWithHandleV2获取，此时需要把tillin信息上报来源设置为DEVICE
     // 和tensor信息保持一致
     MemInfoSrc memInfoSrc = MemInfoSrc::BYPASS;
-    ReportMalloc(tilingAddr, tilingSize, memInfoSrc);
+    ReportMalloc(tilingAddr, tilingSize, memInfoSrc, MemInfoDesc::TILING);
     // 内存分配是通过获取tilling信息模拟的，无实际的桩函数记录，因此需要设为STORE，防止未初始化读误报
-    ReportMemset(tilingAddr, tilingSize, memInfoSrc);
+    ReportMemset(tilingAddr, tilingSize, memInfoSrc, MemInfoDesc::TILING);
     // tiling 信息是 BYPASS 类型，释放时需要在 EXTRA 信息之前
     opMemInfo.uniqueAddrInfos.insert(opMemInfo.uniqueAddrInfos.begin(), {tilingAddr, tilingSize, memInfoSrc});
 }
