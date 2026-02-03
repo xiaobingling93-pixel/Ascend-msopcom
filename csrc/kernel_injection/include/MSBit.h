@@ -468,6 +468,10 @@ enum class InstrType {
     SET_FLAGI_V,
     WAIT_FLAG_V,
     WAIT_FLAGI_V,
+    HSET_FLAG = 471,
+    HSET_FLAGI,
+    HWAIT_FLAG,
+    HWAIT_FLAGI,
 
 
     MAX
