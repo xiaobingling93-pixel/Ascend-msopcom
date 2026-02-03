@@ -480,6 +480,7 @@ private:
                    void *hostArgs, size_t argsSize, aclrtPlaceHolderInfo *placeHolderArray, size_t placeHolderNum);
     void ProfPre(const std::function<bool(void)> &func, const std::function<void(const std::string &)> &bbCountTask,
                  aclrtStream stm);
+    void DoOperandRecord();
     void ProfPost();
     void SanitizerPre();
     void SanitizerPost();

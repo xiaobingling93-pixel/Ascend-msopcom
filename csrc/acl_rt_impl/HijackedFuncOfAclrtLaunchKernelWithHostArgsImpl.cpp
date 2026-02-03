@@ -104,10 +104,10 @@ void HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl::ProfPre(const std::functio
     const std::function<void(const std::string &)> &bbCountTask, aclrtStream stm)
 {
     profObj_->ProfInit(nullptr, nullptr, false); // pc_start落盘txt文件
+    profObj_->ProfData(stm, func);
     if (profObj_->IsBBCountNeedGen() && bbCountTask != nullptr) {
         bbCountTask(ProfDataCollect::GetAicoreOutputPath(devId_));
     }
-    profObj_->ProfData(stm, func);
 }
 
 void HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl::SanitizerPre()
@@ -242,6 +242,45 @@ void HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl::SanitizerPost()
     }
 }
 
+void HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl::DoOperandRecord()
+{
+    std::string socVersion = DeviceContext::Local().GetSocVersion();
+    if (!profObj_->IsOperandRecordNeedGen(socVersion)) {
+        return;
+    }
+    KernelMatcher::Config matchConfig;
+    std::string path = GetEnv(DEVICE_PROF_DUMP_PATH_ENV);
+    DBITaskConfig::Instance().Init(BIType::CUSTOMIZE,
+                                   ProfConfig::Instance().GetPluginPath(ProfDBIType::OPERAND_RECORD), matchConfig, path);
+    aclrtSynchronizeStreamImplOrigin(stream_);
+    refreshParamFunc_();
+    uint64_t sizePerAllType = static_cast<uint32_t>(OperandType::END) * sizeof(OperandRecord) + SIMT_THREAD_GAP;
+    memSize_ = sizeof(OperandHeader) + (sizePerAllType * 2049 + BLOCK_GAP) *  GetCoreNumForDbi(blockDim_);
+    auto argsCtx = launchCtx_->GetArgsContext()->Clone();
+    memInfo_ = InitMemory(memSize_);
+    if (memInfo_ == nullptr || argsCtx == nullptr || !argsCtx->ExpandArgs(&memInfo_, sizeof(uintptr_t), DBITaskConfig::Instance().argsSize_)) {
+        WARN_LOG("operand record gen failed, because of ExpandArgs failed");
+        return;
+    }
+    auto newFuncCtx = RunDBITask(launchCtx_);
+    if (newFuncCtx) {
+        funcCtx_ = newFuncCtx;
+        funcHandle_ = funcCtx_->GetFuncHandle();
+        launchCtx_->SetDBIFuncCtx(funcCtx_);
+        auto argsRawCtx = std::static_pointer_cast<ArgsRawContext>(argsCtx);
+        auto tmpPlaceHolderArray = argsRawCtx->GetPlaceholderInfo();
+        originfunc_(funcHandle_, blockDim_, stream_, cfg_, argsRawCtx->GetArgs(), argsRawCtx->GetArgsSize(),
+                    tmpPlaceHolderArray.data(), tmpPlaceHolderArray.size());
+        aclError ret = aclrtSynchronizeStreamImplOrigin(stream_);
+        if (ret == ACL_SUCCESS) {
+            profObj_->GenRecordData(memSize_, memInfo_, OPERAND_RECORD);
+        } else {
+            WARN_LOG("Run operand record func failed");
+        }
+    }
+    memInfo_ = nullptr;
+}
+
 void HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl::ProfPost()
 {
     if (profObj_->IsBBCountNeedGen()) {
@@ -280,6 +319,7 @@ void HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl::ProfPost()
         }
         memInfo_ = nullptr;
     }
+    DoOperandRecord();
     profObj_->PostProcess();
 }
 

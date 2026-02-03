@@ -91,10 +91,10 @@ void HijackedFuncOfAclrtLaunchKernelImpl::ProfPre(const std::function<bool(void)
                                                   aclrtStream stm)
 {
     profObj_->ProfInit(nullptr, nullptr, false); // pc_start落盘txt文件
+    profObj_->ProfData(stm, func);
     if (profObj_->IsBBCountNeedGen() && bbCountTask != nullptr) {
         bbCountTask(ProfDataCollect::GetAicoreOutputPath(devId_));
     }
-    profObj_->ProfData(stm, func);
 }
 
 void HijackedFuncOfAclrtLaunchKernelImpl::SanitizerPre()
@@ -233,7 +233,7 @@ void HijackedFuncOfAclrtLaunchKernelImpl::DoOperandRecord()
     auto argsCtx = launchCtx_->GetArgsContext()->Clone();
     memInfo_ = InitMemory(memSize_);
     if (memInfo_ == nullptr || argsCtx == nullptr || !argsCtx->ExpandArgs(&memInfo_, sizeof(uintptr_t), DBITaskConfig::Instance().argsSize_)) {
-        WARN_LOG("memory chart gen failed, because of ExpandArgs failed");
+        WARN_LOG("operand record gen failed, because of ExpandArgs failed");
         return;
     }
     auto argsRawCtx = std::static_pointer_cast<ArgsRawContext>(argsCtx);
