@@ -139,7 +139,6 @@ bool CopyFile(const std::string &srcPath, const std::string &destPath)
         ERROR_LOG("Failed to copy file,error reason is %s", e.what());
         return false;
     }
-    DEBUG_LOG("file copy done. srcPath=%s dstPath=%s", srcPath.c_str(), destPath.c_str());
     return true;
 }
 

@@ -90,6 +90,60 @@ bool HijackedFuncOfAclrtLaunchKernelWithConfigImpl::InitParam(
     return true;
 }
 
+uint64_t HijackedFuncOfAclrtLaunchKernelWithConfigImpl::PrepareDbiTaskForInstrProf(uint8_t mode, uint8_t *&memInfo)
+{
+    refreshParamFunc_();
+    KernelMatcher::Config matchConfig;
+    std::string path = GetEnv(DEVICE_PROF_DUMP_PATH_ENV);
+    std::string pluginPath = mode == INSTR_PROF_MODE_BIU_PERF ?
+        ProfConfig::Instance().GetPluginPath(ProfDBIType::INSTR_PROF_END) :
+        ProfConfig::Instance().GetPluginPath(ProfDBIType::INSTR_PROF_START);
+    std::vector<std::string> extraArgs = mode == INSTR_PROF_MODE_BIU_PERF ? std::vector<std::string>() :
+        std::vector<std::string>{START_STUB_COMPILER_ARGS};
+    DBITaskConfig::Instance().Init(BIType::CUSTOMIZE, pluginPath, matchConfig, path, extraArgs);
+    uint64_t memSize = INSTR_PROF_MEMSIZE;
+    newArgsCtx_ = launchCtx_->GetArgsContext()->Clone();
+    memInfo = InitMemory(memSize);
+    if (memInfo == nullptr || newArgsCtx_ == nullptr ||
+        !newArgsCtx_->ExpandArgs(&memInfo, sizeof(uintptr_t), DBITaskConfig::Instance().argsSize_)) {
+        WARN_LOG("End or start stub run failed, because of ExpandArgs failed");
+        return 0;
+    }
+    auto argsHandleCtx = std::static_pointer_cast<ArgsHandleContext>(newArgsCtx_);
+    argsHandle_ = argsHandleCtx->GenerateArgsHandle();
+    auto newFuncCtx = RunDBITask(launchCtx_);
+    if (newFuncCtx) {
+        funcCtx_ = newFuncCtx;
+        funcHandle_ = funcCtx_->GetFuncHandle();
+        launchCtx_->SetDBIFuncCtx(funcCtx_);
+    }
+    return memSize;
+}
+
+void HijackedFuncOfAclrtLaunchKernelWithConfigImpl::ProfPreForInstrProf(const std::function<bool(void)> &func,
+    const std::function<void(const std::string &)> &bbCountTask, rtStream_t stream)
+{
+    auto funcStub = [this]() {
+        return (aclrtLaunchKernelWithConfigImplOrigin(funcHandle_, blockDim_, stream_, cfg_, argsHandle_, reserve_) == ACL_SUCCESS);
+    };
+    if (ProfConfig::Instance().IsPCSamplingEnabled()) {
+        uint8_t *memInfo = nullptr;
+        uint64_t memSize = PrepareDbiTaskForInstrProf(INSTR_PROF_MODE_PC_SAMPLING, memInfo);
+        auto kernelAddr = launchCtx_->GetFuncContext()->GetKernelPC();
+        WriteFileByStream(JoinPath({ProfDataCollect::GetAicoreOutputPath(devId_), "pc_start_pcsampling.txt"}),
+            NumToHexString(kernelAddr), std::fstream::out, std::fstream::binary);
+        profObj_->InstrProfData(stream, funcStub);
+        profObj_->GenRecordData(memSize, memInfo, PCOFFSET_RECORD);
+    }
+    if (ProfConfig::Instance().IsTimelineEnabled()) {
+        uint8_t *memInfo = nullptr;
+        PrepareDbiTaskForInstrProf(INSTR_PROF_MODE_BIU_PERF, memInfo);
+        ProfPre(funcStub, bbCountTask, stream);
+    } else {
+        ProfPre(func, bbCountTask, stream);
+    }
+}
+
 void HijackedFuncOfAclrtLaunchKernelWithConfigImpl::ProfPre(const std::function<bool(void)> &func,
                                                             const std::function<void(const std::string &)> &bbCountTask,
                                                             aclrtStream stm)
@@ -134,7 +188,7 @@ void HijackedFuncOfAclrtLaunchKernelWithConfigImpl::Pre(
             auto func = [funcHandle, blockDim, stream, cfg, argsHandle, reserve]() {
                 return (aclrtLaunchKernelWithConfigImplOrigin(funcHandle, blockDim, stream, cfg, argsHandle, reserve) == ACL_SUCCESS);
             };
-            ProfPre(func, bbCountTask, stream);
+            ProfPreForInstrProf(func, bbCountTask, stream);
         }
     }
     if (IsSanitizer()) {

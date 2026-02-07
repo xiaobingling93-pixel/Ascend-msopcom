@@ -31,6 +31,14 @@ bool TilingFuncContext::GetTilingKey(uint64_t &tilingKey) const
     return true;
 }
 
+uint64_t TilingFuncContext::GetKernelPC() const
+{
+    if (funcHandle_) {
+        return FuncContext::GetKernelPC();
+    }
+    return 0;
+}
+
 uint64_t TilingFuncContext::GetStartPC() const
 {
     if (funcHandle_) {

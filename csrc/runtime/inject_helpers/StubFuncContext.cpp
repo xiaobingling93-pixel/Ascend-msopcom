@@ -24,6 +24,14 @@ StubFuncContext::StubFuncContext(RegisterContextSP regCtx, const char *kernelNam
     kernelName_ = kernelName;
 }
 
+uint64_t StubFuncContext::GetKernelPC() const
+{
+    if (funcHandle_) {
+        return FuncContext::GetKernelPC();
+    }
+    return 0;
+}
+
 uint64_t StubFuncContext::GetStartPC() const
 {
     if (funcHandle_) {

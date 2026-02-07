@@ -30,6 +30,7 @@
 class StubFuncContext : public FuncContext {
 public:
     StubFuncContext(RegisterContextSP regCtx, const char *kernelName, void *funcHandle);
+    uint64_t GetKernelPC() const override;
     uint64_t GetStartPC() const override;
 
     bool GetTilingKey(uint64_t &tilingKey) const override { return false; }

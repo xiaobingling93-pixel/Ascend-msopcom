@@ -445,6 +445,8 @@ private:
                  aclrtStream stm);
     void DoOperandRecord();
     void ProfPost();
+    void ProfPreForInstrProf(const std::function<bool(void)> &func,const std::function<void(const std::string &)> &bbCountTask, rtStream_t stream);
+ 	uint64_t PrepareDbiTaskForInstrProf(uint8_t mode, uint8_t *&memInfo);
     void SanitizerPre();
     void SanitizerPost();
 private:
@@ -480,6 +482,8 @@ private:
                    void *hostArgs, size_t argsSize, aclrtPlaceHolderInfo *placeHolderArray, size_t placeHolderNum);
     void ProfPre(const std::function<bool(void)> &func, const std::function<void(const std::string &)> &bbCountTask,
                  aclrtStream stm);
+    void ProfPreForInstrProf(const std::function<bool(void)> &func,const std::function<void(const std::string &)> &bbCountTask, rtStream_t stream);
+ 	uint64_t PrepareDbiTaskForInstrProf(uint8_t mode, uint8_t *&memInfo);
     void DoOperandRecord();
     void ProfPost();
     void SanitizerPre();
@@ -533,6 +537,8 @@ private:
     void ProfPre(const std::function<bool(void)> &func,
                  const std::function<void(const std::string &)> &bbCountTask, aclrtStream stm);
     void DoOperandRecord();
+    void ProfPreForInstrProf(const std::function<bool(void)> &func,const std::function<void(const std::string &)> &bbCountTask, rtStream_t stream);
+ 	uint64_t PrepareDbiTaskForInstrProf(uint8_t mode, uint8_t *&memInfo);
 
     void SanitizerPre();
     void SanitizerPost();

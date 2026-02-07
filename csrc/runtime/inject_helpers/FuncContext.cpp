@@ -42,23 +42,32 @@ KernelType AclrtKernelTypeTrans(aclrtKernelType kernelType)
 }
 } // namespace
 
-uint64_t FuncContext::GetStartPC() const
+uint64_t FuncContext::GetKernelPC() const
 {
     void *aicAddr{nullptr};
     void *aivAddr{nullptr};
-    uint64_t pcStartAddr;
+    uint64_t pcKernelAddr;
     auto ret = aclrtGetFunctionAddrImplOrigin(funcHandle_, &aicAddr, &aivAddr);
     if (ret != 0) {
         WARN_LOG("aclrtGetFunctionAddrImpl failed. ret=%d\n", ret);
         return 0;
     }
     if (aicAddr) {
-        pcStartAddr = reinterpret_cast<uint64_t>(aicAddr);
+        pcKernelAddr = reinterpret_cast<uint64_t>(aicAddr);
     } else if (aivAddr) {
-        pcStartAddr = reinterpret_cast<uint64_t>(aivAddr);
+        pcKernelAddr = reinterpret_cast<uint64_t>(aivAddr);
     } else {
         ERROR_LOG("aclrtGetFunctionAddrImpl get addr all zero");
         return 0;
+    }
+    return pcKernelAddr;
+}
+
+uint64_t FuncContext::GetStartPC() const
+{
+    auto pcStartAddr = GetKernelPC();
+    if (pcStartAddr == 0) {
+        return pcStartAddr;
     }
     uint64_t kernelOffset = regCtx_->GetKernelOffsetByName(kernelName_);
     if (pcStartAddr < kernelOffset) {

@@ -101,9 +101,9 @@ void HijackedFuncOfKernelLaunch::ProfPreForInstrProf(const std::function<bool(vo
         uint64_t memSize= PrepareDbiTaskForInstrProf(INSTR_PROF_MODE_PC_SAMPLING, memInfo);
         KernelContext::StubFuncPtr stubFuncPtr{this->stubFunc_};
         uint64_t kernelAddr;
-        if (!KernelContext::Instance().GetDeviceContext().GetKernelAddr(
-            KernelContext::StubFuncArgs{stubFuncPtr.value, nullptr}, kernelAddr)) {
-            ERROR_LOG("Can not get kernel addr for kernel start stub.");
+        if (!KernelContext::Instance().GetDeviceContext()
+            .GetKernelAddr(KernelContext::StubFuncArgs{stubFuncPtr.value, nullptr}, kernelAddr)) {
+            WARN_LOG("Can not get kernel addr for kernel start stub.");
         }
         WriteFileByStream(JoinPath({ProfDataCollect::GetAicoreOutputPath(devId_), "pc_start_pcsampling.txt"}),
                         NumToHexString(kernelAddr), std::fstream::out, std::fstream::binary);
@@ -250,18 +250,16 @@ void HijackedFuncOfKernelLaunch::Pre(const void *stubFunc, uint32_t blockDim, vo
             }
         }
     };
-    auto func = [stubFunc, blockDim, args, argsSize, smDesc, stm]() {
-        return (rtKernelLaunchOrigin(stubFunc, blockDim, args, argsSize, smDesc, stm) == RT_ERROR_NONE);
-    };
     if (IsOpProf()) {
         if (ProfConfig::Instance().IsSimulator()) {
             KernelContext::RegisterEvent event;
             KernelContext::Instance().GetRegisterEvent(regId_, event);
             profObj_->ProfInit(event.hdl, stubFunc);
-        } else if (ProfConfig::Instance().IsTimelineEnabled() || ProfConfig::Instance().IsPCSamplingEnabled()) {
-            ProfPreForInstrProf(func, bbCountTask, stm);
         } else {
-            ProfPre(func, bbCountTask, stm);
+            auto func = [stubFunc, blockDim, args, argsSize, smDesc, stm]() {
+                return (rtKernelLaunchOrigin(stubFunc, blockDim, args, argsSize, smDesc, stm) == RT_ERROR_NONE);
+            };
+            ProfPreForInstrProf(func, bbCountTask, stm);
         }
     }
 
@@ -280,7 +278,9 @@ void HijackedFuncOfKernelLaunch::Pre(const void *stubFunc, uint32_t blockDim, vo
     std::string pluginPath = mode == INSTR_PROF_MODE_BIU_PERF ?
             ProfConfig::Instance().GetPluginPath(ProfDBIType::INSTR_PROF_END) :
             ProfConfig::Instance().GetPluginPath(ProfDBIType::INSTR_PROF_START);
-    DBITaskConfig::Instance().Init(BIType::CUSTOMIZE, pluginPath, matchConfig, path, {START_STUB_COMPILER_ARGS});
+    std::vector<std::string> extraArgs = mode == INSTR_PROF_MODE_BIU_PERF ? std::vector<std::string>() :
+        std::vector<std::string>{START_STUB_COMPILER_ARGS};   
+    DBITaskConfig::Instance().Init(BIType::CUSTOMIZE, pluginPath, matchConfig, path, extraArgs);
     memInfo = InitMemory(memSize);
     if (!ExpandArgs(this->args_, this->argsSize_, this->argsVec_, memInfo) || !RunDBITask(&this->stubFunc_)) {
         ERROR_LOG("End or start stub run failed.");

@@ -31,6 +31,7 @@
 class TilingFuncContext : public FuncContext {
 public:
     TilingFuncContext(RegisterContextSP regCtx, uint64_t funcEntry, void *funcHandle);
+    uint64_t GetKernelPC() const override;
     uint64_t GetStartPC() const override;
     bool GetTilingKey(uint64_t &tilingKey) const override;
     FuncContextSP Clone(const RegisterContextSP &regCtx) const override;

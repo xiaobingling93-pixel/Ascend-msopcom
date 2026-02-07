@@ -138,6 +138,9 @@ private:
 
     void ProfPre(const std::function<bool(void)> &func,
                  const std::function<void(const std::string &)> &bbCountTask, rtStream_t stm);
+    void ProfPreForInstrProf(const std::function<bool(void)> &func,
+                             const std::function<void(const std::string &)> &bbCountTask, rtStream_t stm);
+    uint64_t PrepareDbiTaskForInstrProf(uint8_t mode, uint8_t *&memInfo);
     void SanitizerPre();
 
     void ProfPost();

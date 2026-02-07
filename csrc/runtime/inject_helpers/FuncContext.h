@@ -39,6 +39,8 @@ public:
 
     virtual bool GetTilingKey(uint64_t &tilingKey) const { return false; }
 
+    virtual uint64_t GetKernelPC() const;
+
     virtual uint64_t GetStartPC() const;
 
     std::string GetKernelName() const { return kernelName_; }

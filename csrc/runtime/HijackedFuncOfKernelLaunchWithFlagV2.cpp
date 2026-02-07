@@ -208,7 +208,7 @@ void HijackedFuncOfKernelLaunchWithFlagV2::ProfPreForInstrProf(const std::functi
         uint64_t kernelAddr;
         if (!KernelContext::Instance().GetDeviceContext().GetKernelAddr(
             KernelContext::StubFuncArgs{stubFuncPtr.value, nullptr}, kernelAddr)) {
-            ERROR_LOG("Can not get kernel addr for kernel start stub");
+            WARN_LOG("Can not get kernel addr for kernel start stub");
         }
         WriteFileByStream(JoinPath({ProfDataCollect::GetAicoreOutputPath(devId_), "pc_start_pcsampling.txt"}),
                         NumToHexString(kernelAddr), std::fstream::out, std::fstream::binary);
@@ -244,18 +244,16 @@ void HijackedFuncOfKernelLaunchWithFlagV2::Pre(const void *stubFunc, uint32_t bl
             }
         }
     };
-    auto func = [stubFunc, blockDim, argsInfo, smDesc, stm, flags, cfgInfo]() {
-        return (rtKernelLaunchWithFlagV2Origin(stubFunc, blockDim, argsInfo, smDesc, stm, flags, cfgInfo) == RT_ERROR_NONE);
-    };
     if (IsOpProf()) {
         if (ProfConfig::Instance().IsSimulator()) {
             KernelContext::RegisterEvent registerEvent;
             KernelContext::Instance().GetRegisterEvent(regId_, registerEvent);
             profObj_->ProfInit(registerEvent.hdl, stubFunc);
-         } else if (ProfConfig::Instance().IsTimelineEnabled() || ProfConfig::Instance().IsPCSamplingEnabled()) {
+         } else {
+            auto func = [stubFunc, blockDim, argsInfo, smDesc, stm, flags, cfgInfo]() {
+                return (rtKernelLaunchWithFlagV2Origin(stubFunc, blockDim, argsInfo, smDesc, stm, flags, cfgInfo) == RT_ERROR_NONE);
+            };
             ProfPreForInstrProf(func, bbCountTask, stm);
-        } else {
-            ProfPre(func, bbCountTask, stm);
         }
     }
 
@@ -274,7 +272,9 @@ uint64_t HijackedFuncOfKernelLaunchWithFlagV2::PrepareDbiTaskForInstrProf(uint8_
     std::string pluginPath = mode == INSTR_PROF_MODE_BIU_PERF ?
             ProfConfig::Instance().GetPluginPath(ProfDBIType::INSTR_PROF_END) :
             ProfConfig::Instance().GetPluginPath(ProfDBIType::INSTR_PROF_START);
-    DBITaskConfig::Instance().Init(BIType::CUSTOMIZE, pluginPath, matchConfig, path);
+    std::vector<std::string> extraArgs = mode == INSTR_PROF_MODE_BIU_PERF ? std::vector<std::string>() :
+        std::vector<std::string>{START_STUB_COMPILER_ARGS};   
+    DBITaskConfig::Instance().Init(BIType::CUSTOMIZE, pluginPath, matchConfig, path, extraArgs);
     memInfo = InitMemory(memSize);
     if (!ExpandArgs(&this->newArgsInfo_, this->argsVec_, memInfo, hostInput_, DBITaskConfig::Instance().argsSize_) ||
         !RunDBITask(&this->stubFunc_)) {

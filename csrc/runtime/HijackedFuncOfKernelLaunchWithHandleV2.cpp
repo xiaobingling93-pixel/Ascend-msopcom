@@ -93,6 +93,63 @@ void HijackedFuncOfKernelLaunchWithHandleV2::InitParam(void *hdl, const uint64_t
     KernelContext::Instance().ArchiveMemInfo();
 }
 
+// timeline 以及 pcsampling功能需要插end 和 start桩
+uint64_t HijackedFuncOfKernelLaunchWithHandleV2::PrepareDbiTaskForInstrProf(uint8_t mode, uint8_t *&memInfo)
+{
+    refreshParamFunc_();
+    uint64_t memSize = INSTR_PROF_MEMSIZE;
+    KernelMatcher::Config matchConfig;
+    std::string path = GetEnv(DEVICE_PROF_DUMP_PATH_ENV);
+    std::string pluginPath = mode == INSTR_PROF_MODE_BIU_PERF ?
+            ProfConfig::Instance().GetPluginPath(ProfDBIType::INSTR_PROF_END) :
+            ProfConfig::Instance().GetPluginPath(ProfDBIType::INSTR_PROF_START);
+    std::vector<std::string> extraArgs = mode == INSTR_PROF_MODE_BIU_PERF ? std::vector<std::string>() :
+        std::vector<std::string>{START_STUB_COMPILER_ARGS};   
+    DBITaskConfig::Instance().Init(BIType::CUSTOMIZE, pluginPath, matchConfig, path, extraArgs);
+    memInfo = InitMemory(memSize);
+    if (!ExpandArgs(&newArgsInfo_, argsVec_, memInfo, hostInput_, DBITaskConfig::Instance().argsSize_) ||
+        !RunDBITask(&hdl_, tilingKey_)) {
+        ERROR_LOG("End or start stub run failed.");
+    }
+    return memSize;
+}
+
+void HijackedFuncOfKernelLaunchWithHandleV2::ProfPreForInstrProf(const std::function<bool(void)> &func,
+                                                                 const std::function<void(const std::string &)> &bbCountTask,
+                                                                 rtStream_t stm)
+{
+    auto funcStub = [this]() {
+        return (rtKernelLaunchWithHandleV2Origin(hdl_, tilingKey_, blockDim_, argsInfo_, smDesc_, stm_, cfgInfo_) == RT_ERROR_NONE);
+    };
+
+    if (ProfConfig::Instance().IsPCSamplingEnabled()) {
+        uint8_t *memInfo = nullptr;
+        uint64_t memSize= PrepareDbiTaskForInstrProf(INSTR_PROF_MODE_PC_SAMPLING, memInfo);
+        KernelContext::LaunchEvent event;
+        uint64_t tiling = 0;
+        if (KernelContext::Instance().GetLastLaunchEvent(event)) {
+            tiling = event.tilingKey;
+        }
+        KernelContext::KernelHandlePtr hdlPtr{hdl_};
+        uint64_t kernelAddr;
+        if (!KernelContext::Instance().GetDeviceContext().GetKernelAddr(
+            KernelContext::KernelHandleArgs{hdlPtr.value, nullptr, tiling}, kernelAddr)) {
+            WARN_LOG("Can not get kernel addr for kernel start stub.");
+        }
+        WriteFileByStream(JoinPath({ProfDataCollect::GetAicoreOutputPath(devId_), "pc_start_pcsampling.txt"}),
+                        NumToHexString(kernelAddr), std::fstream::out, std::fstream::binary);
+        profObj_->InstrProfData(stm, funcStub);
+        profObj_->GenRecordData(memSize, memInfo, PCOFFSET_RECORD);
+    }
+    if (ProfConfig::Instance().IsTimelineEnabled()) {
+        uint8_t *memInfo = nullptr;
+        PrepareDbiTaskForInstrProf(INSTR_PROF_MODE_BIU_PERF, memInfo);
+        ProfPre(funcStub, bbCountTask, stm);
+    } else {
+        ProfPre(func, bbCountTask, stm);
+    }
+}
+
 void HijackedFuncOfKernelLaunchWithHandleV2::ProfPre(const std::function<bool(void)> &func,
                                                      const std::function<void(const std::string &)> &bbCountTask,
                                                      rtStream_t stm)
@@ -100,11 +157,11 @@ void HijackedFuncOfKernelLaunchWithHandleV2::ProfPre(const std::function<bool(vo
     KernelContext::LaunchEvent event;
     KernelContext::Instance().GetLaunchEvent(launchId_, event);
     profObj_->ProfInit(event.hdl, nullptr, false); // pc_start落盘txt文件
+    profObj_->ProfData(stm, func);
     if (profObj_->IsBBCountNeedGen()) {
         refreshParamFunc_();
         bbCountTask(ProfDataCollect::GetAicoreOutputPath(devId_));
     }
-    profObj_->ProfData(stm, func);
 }
 
 void HijackedFuncOfKernelLaunchWithHandleV2::ProfPost()
@@ -231,7 +288,7 @@ void HijackedFuncOfKernelLaunchWithHandleV2::Pre(void *hdl, const uint64_t tilin
             auto func = [hdl, tilingKey, blockDim, argsInfo, smDesc, stm, cfgInfo]() {
                 return (rtKernelLaunchWithHandleV2Origin(hdl, tilingKey, blockDim, argsInfo, smDesc, stm, cfgInfo) == RT_ERROR_NONE);
             };
-            ProfPre(func, bbCountTask, stm);
+            ProfPreForInstrProf(func, bbCountTask, stm);
         }
     }
 
