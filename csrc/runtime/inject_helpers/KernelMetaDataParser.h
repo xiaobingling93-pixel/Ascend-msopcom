@@ -88,7 +88,7 @@ inline bool NeedAddFftsAddr()
 {
     std::string socVersion = DeviceContext::Local().GetSocVersion();
     if ((socVersion.find("Ascend310P") != std::string::npos) ||
-        (socVersion.find("Ascend910_95") != std::string::npos)) {
+        (socVersion.find("Ascend950") != std::string::npos)) {
         return false;
     }
     return true;

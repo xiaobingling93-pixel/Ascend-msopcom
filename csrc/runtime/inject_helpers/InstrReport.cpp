@@ -63,7 +63,7 @@ inline bool IsC220Arch(DeviceType deviceType)
 
 inline bool IsC310Arch(DeviceType deviceType)
 {
-    return deviceType > DeviceType::ASCEND_910_95_START && deviceType < DeviceType::ASCEND_910_95_END;
+    return deviceType > DeviceType::ASCEND_950_START && deviceType < DeviceType::ASCEND_950_END;
 }
 
 inline bool HasSubBlocks(DeviceType deviceType)
@@ -693,7 +693,7 @@ std::string GetArchName(KernelType kernelType, const std::string &socVersion)
         }
     }
 
-    if (socVersion.find("Ascend910_95") != std::string::npos) {
+    if (socVersion.find("Ascend950") != std::string::npos) {
         switch (kernelType) {
             case KernelType::AIVEC:
                 return "dav-c310-vec";

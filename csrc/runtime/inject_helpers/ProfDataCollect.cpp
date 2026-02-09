@@ -87,37 +87,38 @@ static std::map<std::string, L2CacheClearTiling> l2CacheClearTilingMap = {
     {"Ascend310P3", {2097152, 8}},
     {"Ascend310P5", {2097152, 8}},
     {"Ascend310P7", {2097152, 8}},
-    {"Ascend910_950x", {4194304, 8}},
-    {"Ascend910_950y", {4194304, 8}},
-    {"Ascend910_950z", {2097152, 8}},
-    {"Ascend910_9571", {4794880, 28}},
-    {"Ascend910_9572", {4794880, 28}},
-    {"Ascend910_9573", {4194304, 28}},
-    {"Ascend910_9574", {4194304, 28}},
-    {"Ascend910_9575", {4794880, 28}},
-    {"Ascend910_9576", {4794880, 28}},
-    {"Ascend910_9577", {4194304, 28}},
-    {"Ascend910_9578", {4194304, 28}},
-    {"Ascend910_9579", {4794880, 28}},
-    {"Ascend910_957b", {4194304, 28}},
-    {"Ascend910_957c", {4194304, 28}},
-    {"Ascend910_957d", {3596800, 28}},
-    {"Ascend910_9581", {4194304, 32}},
-    {"Ascend910_9582", {4194304, 32}},
-    {"Ascend910_9583", {3670016, 32}},
-    {"Ascend910_9584", {3670016, 32}},
-    {"Ascend910_9585", {4194304, 32}},
-    {"Ascend910_9586", {4194304, 32}},
-    {"Ascend910_9587", {3670016, 32}},
-    {"Ascend910_9588", {3670016, 32}},
-    {"Ascend910_9589", {4194304, 32}},
-    {"Ascend910_958a", {4194304, 32}},
-    {"Ascend910_958b", {3670016, 32}},
-    {"Ascend910_9591", {3729920, 36}},
-    {"Ascend910_9592", {3729920, 36}},
-    {"Ascend910_9595", {3729920, 36}},
-    {"Ascend910_9596", {3729920, 36}},
-    {"Ascend910_9599", {3729920, 36}},
+    {"Ascend950DT_950x", {4194304, 8}},
+    {"Ascend950DT_950y", {4194304, 8}},
+    {"Ascend950DT_9571", {4794880, 28}},
+    {"Ascend950DT_9572", {4794880, 28}},
+    {"Ascend950DT_9573", {4194304, 28}},
+    {"Ascend950DT_9574", {4194304, 28}},
+    {"Ascend950DT_9575", {4794880, 28}},
+    {"Ascend950DT_9576", {4794880, 28}},
+    {"Ascend950DT_9577", {4194304, 28}},
+    {"Ascend950DT_9578", {4194304, 28}},
+    {"Ascend950DT_9581", {4194304, 32}},
+    {"Ascend950DT_9582", {4194304, 32}},
+    {"Ascend950DT_9583", {3670016, 32}},
+    {"Ascend950DT_9584", {3670016, 32}},
+    {"Ascend950DT_9585", {4194304, 32}},
+    {"Ascend950DT_9586", {4194304, 32}},
+    {"Ascend950DT_9587", {3670016, 32}},
+    {"Ascend950DT_9588", {3670016, 32}},
+    {"Ascend950DT_9591", {3729920, 36}},
+    {"Ascend950DT_9592", {3729920, 36}},
+    {"Ascend950DT_9595", {3729920, 36}},
+    {"Ascend950DT_9596", {3729920, 36}},
+    {"Ascend950DT_95A1", {3728280, 36}},
+    {"Ascend950DT_95A2", {3728280, 36}},
+    {"Ascend950PR_950z", {2097152, 8}},
+    {"Ascend950PR_9579", {4794880, 28}},
+    {"Ascend950PR_957b", {4194304, 28}},
+    {"Ascend950PR_957c", {4194304, 28}},
+    {"Ascend950PR_957d", {3596800, 28}},
+    {"Ascend950PR_9589", {4194304, 32}},
+    {"Ascend950PR_958b", {3670016, 32}},
+    {"Ascend950PR_9599", {3729920, 36}},
 };
 
 aclError CheckAclResult(aclError result, const string &apiName)
@@ -372,7 +373,7 @@ private:
         ChipProductType chipType = GetProductTypeBySocVersion(socVersion);
         uint32_t pmuEventMaxNum = PMU_EVENT_MAX_NUM;
         uint32_t eventMaxNum = EVENT_MAX_NUM;
-        if (IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND910_95_SERIES)) {
+        if (IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND950_SERIES)) {
             pmuEventMaxNum = PMU_EVENT_MAX_NUM_A5;
             eventMaxNum = EVENT_MAX_NUM_A5;
         }
@@ -1748,7 +1749,7 @@ bool ProfDataCollect::IsOperandRecordNeedGen(const std::string &socVersion)
     auto config = ProfConfig::Instance().GetConfig();
     auto chipType = GetProductTypeBySocVersion(socVersion);
     return ((config.dbiFlag & DBI_FLAG_OPERAND_RECORD) &&
-        IsNeedProf() && IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND910_95_SERIES) &&
+        IsNeedProf() && IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND950_SERIES) &&
         !KernelContext::Instance().GetMC2Flag() &&
         !KernelContext::Instance().GetLcclFlag() &&
         !ProfConfig::Instance().IsRangeReplay());

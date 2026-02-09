@@ -950,7 +950,7 @@ std::unique_ptr<ProfTask> ProfTaskFactory::Create()
     } else if (StartsWith(socVersion, "Ascend910B")) {
         taskPtr = std::unique_ptr<ProfTaskOf910B>{
             new ProfTaskOf910B(ProfConfig::Instance().GetConfig(), deviceId)};
-    } else if (StartsWith(socVersion, "Ascend910_95")) {
+    } else if (StartsWith(socVersion, "Ascend950")) {
         taskPtr = std::unique_ptr<ProfTaskOfA5>{
             new ProfTaskOfA5(ProfConfig::Instance().GetConfig(), deviceId)};
     } else {

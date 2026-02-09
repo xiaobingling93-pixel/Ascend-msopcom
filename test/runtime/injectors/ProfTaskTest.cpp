@@ -59,7 +59,7 @@ TEST(ProfTask, prof_task_factory_create_910B_310P_A5_task_and_expect_success)
     DeviceContext::Local().SetSocVersion("Ascend310P");
     std::unique_ptr<ProfTask> task2 = ProfTaskFactory::Create();
     ASSERT_TRUE(task2 != nullptr);
-    DeviceContext::Local().SetSocVersion("Ascend910_9591");
+    DeviceContext::Local().SetSocVersion("Ascend950DT_9591");
     std::unique_ptr<ProfTask> task3 = ProfTaskFactory::Create();
     ASSERT_TRUE(task3 != nullptr);
     GlobalMockObject::verify();
@@ -298,7 +298,7 @@ TEST(ProfTask, test_prof_task_A5_StartStarsTask_and_expect_return_true)
     profMessage.replayCount = 0;
     ProfConfig::Instance().Init(profMessage);
     DeviceContext::Local().SetDeviceId(1);
-    DeviceContext::Local().SetSocVersion("Ascend910_9589");
+    DeviceContext::Local().SetSocVersion("Ascend950PR_9589");
     std::unique_ptr<ProfTask> task = ProfTaskFactory::Create();
     ASSERT_TRUE(task != nullptr);
     task->profTaskConfig_.aicPmu[0] = 0;
@@ -324,7 +324,7 @@ TEST(ProfTask, test_prof_task_A5_start_and_expect_return_true)
     std::fill(profMessage.l2CachePmu, profMessage.l2CachePmu + 64, 5);
     ProfConfig::Instance().Init(profMessage);
     DeviceContext::Local().SetDeviceId(1);
-    DeviceContext::Local().SetSocVersion("Ascend910_9589");
+    DeviceContext::Local().SetSocVersion("Ascend950PR_9589");
     std::unique_ptr<ProfTask> task = ProfTaskFactory::Create();
     ProfConfig::Instance().profConfig_.dbiFlag = 0;
     ASSERT_TRUE(task != nullptr);
@@ -349,7 +349,7 @@ TEST(ProfTask, test_A5_start_instr_task_when_timeline_enable_then_return_true)
     std::fill(profMessage.l2CachePmu, profMessage.l2CachePmu + 64, 5);
     ProfConfig::Instance().Init(profMessage);
     DeviceContext::Local().SetDeviceId(1);
-    DeviceContext::Local().SetSocVersion("Ascend910_9589");
+    DeviceContext::Local().SetSocVersion("Ascend950PR_9589");
     std::unique_ptr<ProfTask> task = ProfTaskFactory::Create();
     ASSERT_TRUE(task != nullptr);
     ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_INSTR_PROF_END;
@@ -374,7 +374,7 @@ TEST(ProfTask, test_A5_start_instr_task_when_pcSampling_enable_then_return_true)
     std::fill(profMessage.l2CachePmu, profMessage.l2CachePmu + 64, 5);
     ProfConfig::Instance().Init(profMessage);
     DeviceContext::Local().SetDeviceId(1);
-    DeviceContext::Local().SetSocVersion("Ascend910_9589");
+    DeviceContext::Local().SetSocVersion("Ascend950PR_9589");
     std::unique_ptr<ProfTask> task = ProfTaskFactory::Create();
     ASSERT_TRUE(task != nullptr);
     ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_INSTR_PROF_START;
@@ -399,7 +399,7 @@ TEST(ProfTask, test_A5_start_instr_task_when_start_task_failed_then_return_false
     std::fill(profMessage.l2CachePmu, profMessage.l2CachePmu + 64, 5);
     ProfConfig::Instance().Init(profMessage);
     DeviceContext::Local().SetDeviceId(1);
-    DeviceContext::Local().SetSocVersion("Ascend910_9589");
+    DeviceContext::Local().SetSocVersion("Ascend950PR_9589");
     std::unique_ptr<ProfTask> task = ProfTaskFactory::Create();
     ASSERT_TRUE(task != nullptr);
     MOCKER(prof_drv_start_origin)
@@ -423,7 +423,7 @@ TEST(ProfTask, test_A5_channel_read_when_timeline_or_pcsampling_enabled_and_expe
     string path = "./output";
     std::map<int32_t, std::string> aicoreOutputPathMap = {{0, "./"}};
     DeviceContext::Local().SetDeviceId(1);
-    DeviceContext::Local().SetSocVersion("Ascend910_9589");
+    DeviceContext::Local().SetSocVersion("Ascend950PR_9589");
     std::unique_ptr<ProfTask> task = ProfTaskFactory::Create();
     ASSERT_TRUE(task != nullptr);
     prof_poll_info_t channels[PROF_CHANNEL_NUM];

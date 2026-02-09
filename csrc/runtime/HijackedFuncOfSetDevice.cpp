@@ -43,7 +43,7 @@ void HijackedFuncOfSetDevice::Pre(int32_t devId)
             return;
         }
         DEBUG_LOG("get soc version %.2048s with device id %d", socVersion_, this->devId_);
-        if (std::string(socVersion_).find("Ascend910_95") == std::string::npos) {
+        if (std::string(socVersion_).find("Ascend950") == std::string::npos) {
             return;
         }
         /// a5芯片需要修改simt warp stack size，保证动态插桩后算子能正常运行；

@@ -111,7 +111,7 @@ std::string DFXKernelLauncher::GetL2CacheKernelPath()
         {ChipProductType::ASCEND910B_SERIES, "dfx_kernel_dav-c220-cube.o"},
         {ChipProductType::ASCEND910_93_SERIES, "dfx_kernel_dav-c220-cube.o"},
         {ChipProductType::ASCEND310P_SERIES, "dfx_kernel_dav-m200.o"},
-        {ChipProductType::ASCEND910_95_SERIES, "dfx_kernel_dav-c310-cube.o"}
+        {ChipProductType::ASCEND950_SERIES, "dfx_kernel_dav-c310-cube.o"}
     };
     std::string socVersion = DeviceContext::Local().GetSocVersion();
     auto chipType = GetProductSeriesType(socVersion);

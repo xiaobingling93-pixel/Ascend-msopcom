@@ -34,7 +34,7 @@ TEST(aclrtSetDeviceImpl, sanitizer_call_pre_function_with_devid_expect_save_corr
 {
     MOCKER(IsSanitizer).stubs().will(returnValue(true));
     MOCKER(IsOpProf).stubs().will(returnValue(false));
-    std::string socVersion = "Ascend910_9589";
+    std::string socVersion = "Ascend950PR_9589";
     MOCKER(aclrtGetSocNameImplOrigin).stubs().will(returnValue(socVersion.c_str()));
     MOCKER(rtDeviceSetLimitOrigin).stubs().will(returnValue(RT_ERROR_NONE));
 

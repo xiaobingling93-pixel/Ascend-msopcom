@@ -173,5 +173,5 @@ inline bool IsPlatformSupportDBI() // for dbi task
     const std::string &socVersion = DeviceContext::Local().GetSocVersion();
     return socVersion.find("Ascend910B") != std::string::npos ||
            socVersion.find("Ascend910_93") != std::string::npos ||
-           socVersion.find("Ascend910_95") != std::string::npos;
+           socVersion.find("Ascend950") != std::string::npos;
 }

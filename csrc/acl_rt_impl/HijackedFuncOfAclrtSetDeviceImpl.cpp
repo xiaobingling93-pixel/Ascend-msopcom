@@ -35,7 +35,7 @@ void HijackedFuncOfAclrtSetDeviceImpl::Pre(int32_t devId)
     this->devId_ = devId;
     if (IsSanitizer()) {
         char const *socVersion = aclrtGetSocNameImplOrigin();
-        if (std::string(socVersion).find("Ascend910_95") == std::string::npos) {
+        if (std::string(socVersion).find("Ascend950") == std::string::npos) {
             return;
         }
         if (rtDeviceSetLimitOrigin(devId, RT_LIMIT_TYPE_SIMT_WARP_STACK_SIZE, 0x8000) != RT_ERROR_NONE) {
