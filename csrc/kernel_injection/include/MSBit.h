@@ -16,6 +16,7 @@
 
 #pragma once
 #if !defined(__CCE_IS_AICORE__)
+#include <cstdint>
 #include <vector>
 #include <string>
 #endif

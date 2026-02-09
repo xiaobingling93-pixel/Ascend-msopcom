@@ -18,6 +18,7 @@
 #ifndef __CORE_LOCAL_PROCESS_H__
 #define __CORE_LOCAL_PROCESS_H__
 
+#include <cstdint>
 #include <string>
 #include <csignal>
 #include "Communication.h"

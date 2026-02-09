@@ -53,6 +53,7 @@ target_include_directories(kernel_launcher_acl PUBLIC
 add_executable(kernel_launcher_bin
         main.cpp
 )
+target_link_options(kernel_launcher_bin PRIVATE "-pie")
 
 add_dependencies(kernel_launcher_bin kernel_launcher_obj)
 

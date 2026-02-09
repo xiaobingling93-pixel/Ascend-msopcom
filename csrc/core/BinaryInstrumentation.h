@@ -18,6 +18,7 @@
 #ifndef __BINARY_INSTRUCTION__
 #define __BINARY_INSTRUCTION__
 
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <memory>

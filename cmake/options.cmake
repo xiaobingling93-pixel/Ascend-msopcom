@@ -20,7 +20,6 @@ if(NOT CMAKE_VERSION VERSION_LESS "3.13")
     add_link_options ("-Wl,-z,now")
     add_link_options ("-Wl,-z,relro")
     add_link_options ("-Wl,-z,noexecstack")
-    add_link_options ("-pie")
     if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
         add_link_options ("-s")  # strip symbols
     endif()
