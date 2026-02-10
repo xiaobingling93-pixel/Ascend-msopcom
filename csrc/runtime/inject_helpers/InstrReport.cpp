@@ -342,7 +342,11 @@ inline void ParseSmL1Table(uint8_t *memInfoHost, uint64_t smBaseAddr, RecordBloc
     uint64_t l1TblOffset = l0TblPtr[l0Idx] - smBaseAddr;
     auto l1TblPtr = reinterpret_cast<uint64_t *>(memInfoHost + l1TblOffset);
     for (size_t l1Idx = 0; l1Idx < l1TblNum; ++l1Idx) {
-        if (l1TblPtr[l1Idx] == 0x0) { continue; }
+        if ((l1TblPtr[l1Idx] == 0x0) ||
+            (l1TblPtr[l1Idx] == static_cast<uint64_t>(OnlineSmAddrStatus::UNALLOCATABLE)) ||
+            (l1TblPtr[l1Idx] == static_cast<uint64_t>(OnlineSmAddrStatus::LOCKED_BY_OTHER_THREADS))) {
+            continue;
+        }
         uint64_t l2TblOffset = l1TblPtr[l1Idx] - smBaseAddr;
         auto l2TblPtr = reinterpret_cast<uint64_t *>(memInfoHost + l2TblOffset);
         ParseSmL2Table(l2TblPtr, l0Idx, l1Idx, head, records);
@@ -355,7 +359,11 @@ inline void ParseSmTable(uint8_t *memInfoHost, uint64_t smBaseAddr, RecordBlockH
     uint64_t l0TblNum = (ONLINE_GLOBAL_MEM_MASK + ONLINE_LOCAL_MEM_MASK - 1U) / ONLINE_LOCAL_MEM_MASK;
     auto l0TblPtr = reinterpret_cast<uint64_t *>(memInfoHost + sizeof(ShadowMemoryHeapHead));
     for (size_t l0Idx = 0; l0Idx < l0TblNum; ++l0Idx) {
-        if (l0TblPtr[l0Idx] == 0x0) { continue; }
+        if ((l0TblPtr[l0Idx] == 0x0) ||
+            (l0TblPtr[l0Idx] == static_cast<uint64_t>(OnlineSmAddrStatus::UNALLOCATABLE)) ||
+            (l0TblPtr[l0Idx] == static_cast<uint64_t>(OnlineSmAddrStatus::LOCKED_BY_OTHER_THREADS))) {
+            continue;
+        }
         ParseSmL1Table(memInfoHost, smBaseAddr, head, l0Idx, records);
     }
 }
@@ -545,7 +553,9 @@ bool InitSimtShadowMemoryHead(const RecordGlobalHead &recordGlobalHead, uint8_t 
     smHeapHead.startAddr = (uint64_t)shadowMemoryHeadAddr + sizeof(ShadowMemoryHeapHead);
     smHeapHead.size = shadowMemorySize > sizeof(ShadowMemoryHeapHead) ?
         shadowMemorySize - sizeof(ShadowMemoryHeapHead) : 0U;
-    smHeapHead.current = smHeapHead.startAddr;
+    // 预分配shadow memory L0级表空间，每个节点占8字节
+    smHeapHead.current = smHeapHead.startAddr +
+        ((ONLINE_GLOBAL_MEM_MASK + ONLINE_LOCAL_MEM_MASK - 1U) / ONLINE_LOCAL_MEM_MASK) * sizeof(uint64_t);
     smHeapHead.lock = 0U;
 
     DEBUG_LOG("ShadowMemoryHeapHead on 0x%lx startAddr=0x%lx size=0x%lx current=0x%lx lock=0x%lx",

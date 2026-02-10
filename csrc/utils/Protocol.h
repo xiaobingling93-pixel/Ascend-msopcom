@@ -74,10 +74,16 @@ constexpr uint64_t ILLEGAL_ADDR = 0xFFFFFFFFFFFFFFFFULL;
 
 // gm建模地址范围0 ~ 0xFFFF FFFF FFFF (48 bits)
 constexpr uint64_t ONLINE_GLOBAL_MEM_MASK = 0xFFFFFFFFFFFFULL;
-// 片上内存建模地址范围0 ~ 0xF FFFF FFFF (36 bits)
-constexpr uint64_t ONLINE_LOCAL_MEM_MASK = 0xFFFFFFFFFULL;
+// 片上内存建模地址范围0 ~ 0xF FFFF FFFF (32 bits)
+constexpr uint64_t ONLINE_LOCAL_MEM_MASK = 0xFFFFFFFFULL;
 // 用于标记GM上定义的数据来源于host
 constexpr uint64_t ONLINE_ONE_SM_STAND_FOR_BYTE = 0xFFFFULL + 1; // 64KB
+
+// 在线shadow memory的单字节状态
+enum class OnlineSmAddrStatus : uint64_t {
+    LOCKED_BY_OTHER_THREADS = 1U,
+    UNALLOCATABLE = UINT64_MAX, // 内存不足，无法再分配
+};
 
 /// argsSize的最大值
 constexpr size_t MAX_ALL_PARAM_SIZE = 1ULL * 1024 * 1024 * 1024;
