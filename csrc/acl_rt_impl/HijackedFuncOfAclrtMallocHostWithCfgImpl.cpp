@@ -19,23 +19,40 @@
 #include "HijackedFunc.h"
 #include "acl_rt_impl/AscendclImplOrigin.h"
 #include "core/FuncSelector.h"
+#include "utils/Numeric.h"
 #include "utils/Protocol.h"
 #include "utils/Serialize.h"
 #include "runtime/inject_helpers/LocalDevice.h"
+#include "runtime/inject_helpers/KernelContext.h"
 #include "runtime/inject_helpers/MemoryContext.h"
 #include "runtime/inject_helpers/MemoryDataCollect.h"
 
-HijackedFuncOfAclrtFreeHostImpl::HijackedFuncOfAclrtFreeHostImpl()
-    : HijackedFuncType(AclRuntimeLibName(), "aclrtFreeHostImpl") {}
+HijackedFuncOfAclrtMallocHostWithCfgImpl::HijackedFuncOfAclrtMallocHostWithCfgImpl()
+    : HijackedFuncType(AclRuntimeLibName(), "aclrtMallocHostWithCfgImpl"), hostPtr_{nullptr}, size_{} {}
 
-void HijackedFuncOfAclrtFreeHostImpl::Pre(void *hostPtr)
+void HijackedFuncOfAclrtMallocHostWithCfgImpl::Pre(void **hostPtr, size_t size, aclrtMallocConfig *cfg)
+{
+    this->hostPtr_ = hostPtr;
+    this->size_ = size;
+}
+
+aclError HijackedFuncOfAclrtMallocHostWithCfgImpl::Post(aclError ret)
 {
     if (IsSanitizer()) {
+        // 只有实际内存分配成功内存地址才有效，才需要上报内存分配信息
+        if (ret != ACL_ERROR_NONE) {
+            return ret;
+        }
+
+        constexpr uint64_t blockAlignSize = 32;
         PacketHead head = { PacketType::MEMORY_RECORD };
         HostMemRecord record{};
-        record.type = MemOpType::FREE;
+        record.type = MemOpType::MALLOC;
         record.infoSrc = MemInfoSrc::ACL;
-        record.dstAddr = reinterpret_cast<uint64_t>(hostPtr);
+        record.dstAddr = reinterpret_cast<uint64_t>(*hostPtr_);
+        // acl 接口内存分配上报时 size 与 rt 接口保持一致
+        record.memSize = CeilByAlignSize<blockAlignSize>(size_) + blockAlignSize;
         LocalDevice::Local().Notify(Serialize(head, record));
     }
+    return ret;
 }

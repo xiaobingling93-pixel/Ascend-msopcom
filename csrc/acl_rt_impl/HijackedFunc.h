@@ -111,6 +111,18 @@ private:
     size_t size_{0};
 };
 
+class HijackedFuncOfAclrtMallocHostWithCfgImpl : public decltype(AscendclImpHijackedType(&aclrtMallocHostWithCfgImpl)) {
+public:
+    explicit HijackedFuncOfAclrtMallocHostWithCfgImpl();
+    ~HijackedFuncOfAclrtMallocHostWithCfgImpl() override = default;
+    void Pre(void **hostPtr, size_t size, aclrtMallocConfig *cfg) override;
+    aclError Post(aclError ret) override;
+
+private:
+    void **hostPtr_{nullptr};
+    size_t size_{0};
+};
+
 class HijackedFuncOfAclrtFreeImpl : public decltype(AscendclImpHijackedType(&aclrtFreeImpl)) {
 public:
     explicit HijackedFuncOfAclrtFreeImpl();

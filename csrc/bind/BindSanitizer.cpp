@@ -45,6 +45,7 @@ void HijackedAscendclImplCtor()
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtResetDeviceImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtMallocImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtMallocHostImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtMallocHostWithCfgImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtFreeImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtFreeHostImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtMemsetImpl);
@@ -607,6 +608,13 @@ aclError aclrtMallocHostImpl(void **hostPtr, size_t size)
     LayerGuard guard(HijackedLayerManager::Instance(), __func__);
     HijackedFuncOfAclrtMallocHostImpl instance;
     return instance.Call(hostPtr, size);
+}
+
+aclError aclrtMallocHostWithCfgImpl(void **hostPtr, size_t size, aclrtMallocConfig *cfg)
+{
+    LayerGuard guard(HijackedLayerManager::Instance(), __func__);
+    HijackedFuncOfAclrtMallocHostWithCfgImpl instance;
+    return instance.Call(hostPtr, size, cfg);
 }
 
 aclError aclrtFreeImpl(void *devPtr)

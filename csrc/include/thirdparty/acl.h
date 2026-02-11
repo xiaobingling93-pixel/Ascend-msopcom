@@ -193,6 +193,7 @@ aclError aclrtSynchronizeStreamImpl(aclrtStream stream);
 aclError aclrtMemcpyAsyncImpl(void *dst, size_t destMax, const void *src, size_t count,
                               aclrtMemcpyKind kind, aclrtStream stream);
 aclError aclrtMallocHostImpl(void **hostPtr, size_t size);
+aclError aclrtMallocHostWithCfgImpl(void **hostPtr, size_t size, aclrtMallocConfig *cfg);
 aclError aclrtFreeHostImpl(void *hostPtr);
 aclError aclrtCtxGetCurrentDefaultStreamImpl(aclrtStream *stream);
 aclError aclrtSetDeviceImpl(int32_t deviceId);

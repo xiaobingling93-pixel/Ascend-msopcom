@@ -6,6 +6,7 @@ file(GLOB INJECTION_SRC
     HijackedFuncOfAclrtMallocImpl.cpp
     HijackedFuncOfAclrtMallocCachedImpl.cpp
     HijackedFuncOfAclrtMallocHostImpl.cpp
+    HijackedFuncOfAclrtMallocHostWithCfgImpl.cpp
     HijackedFuncOfAclrtFreeImpl.cpp
     HijackedFuncOfAclrtFreeHostImpl.cpp
     HijackedFuncOfAclrtMemsetImpl.cpp

@@ -52,7 +52,6 @@ aclError HijackedFuncOfAclrtMallocHostImpl::Post(aclError ret)
         record.dstAddr = reinterpret_cast<uint64_t>(*hostPtr_);
         // acl 接口内存分配上报时 size 与 rt 接口保持一致
         record.memSize = CeilByAlignSize<blockAlignSize>(size_) + blockAlignSize;
-        MemoryManage::Instance().CacheMemory<MemoryOpType::MALLOC>(record.dstAddr, record.infoSrc, record.memSize);
         LocalDevice::Local().Notify(Serialize(head, record));
     }
     return ret;
