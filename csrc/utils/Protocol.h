@@ -288,7 +288,7 @@ struct RecordBlockHeadImpl {
 #else
     HostMemoryInfo *hostMemoryInfoPtr{nullptr};            // 算子host侧memory输入数据，host侧为堆地址
 #endif
-    bool inMstxFuseScope{false};            // 是否在融合语义范围内
+    uint32_t mstxFuseScopeDepth{};          // 融合语义深度
     bool extraWriteSuccess{false};          // extra地址信息是否写入成功
 };
 
