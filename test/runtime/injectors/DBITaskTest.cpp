@@ -46,7 +46,7 @@ public:
         string stubKernelName = "bcd";
         MOCKER_CPP(&RegisterManager::GetContext).stubs().will(returnValue(regCtx_));
         MOCKER_CPP(&RegisterContext::GetKernelName).stubs().will(returnValue(tilingKernelName));
-        MOCKER_CPP(&RegisterContext::GetRegisterId).stubs().will(returnValue(10ULL));
+        MOCKER_CPP(&RegisterContext::GetRegisterId).stubs().will(returnValue(10UL));
         MOCKER_CPP(&RegisterContext::Save).stubs().will(returnValue(true));
         uint64_t data[5];
         tilingFuncCtx_ = FuncManager::Instance().CreateContext(&data[0], uint64_t(0), &data[0]);

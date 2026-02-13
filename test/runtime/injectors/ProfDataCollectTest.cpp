@@ -596,10 +596,14 @@ TEST_F(ProfDataCollectTest, prof_success_but_l2cache_init_failed)
 
 TEST_F(ProfDataCollectTest, prof_data_output_is_null)
 {
+    MOCKER(&LocalProcess::Notify).stubs().will(returnValue(0));
+    MOCKER(&DomainSocketClient::Connect).stubs().will(returnValue(true));
     DeviceContext::Local().SetSocVersion("Ascend910B");
     std::string path = "./tmp";
+    MkdirRecusively(path);
     MOCKER(IsDir).stubs().will(returnValue(true));
     MOCKER(GetEnv).stubs().will(returnValue(path));
+    MOCKER(IsExist).stubs().will(returnValue(true));
     std::string outPath;
     ProfConfig::Instance().profConfig_.isSimulator = true;
     MOCKER(&ProfConfig::GetOutputPathFromRemote).stubs().will(returnValue(outPath));
@@ -614,11 +618,16 @@ TEST_F(ProfDataCollectTest, prof_data_output_is_null)
 
 TEST_F(ProfDataCollectTest, prof_data_output_is_not_null)
 {
+    MOCKER(&LocalProcess::Notify).stubs().will(returnValue(0));
+    MOCKER(&DomainSocketClient::Connect).stubs().will(returnValue(true));
     DeviceContext::Local().SetSocVersion("Ascend910B");
     std::string path = "./tmp";
     std::string outPath = "./tmp/aa";
+    MkdirRecusively(path);
+    MkdirRecusively(outPath);
     MOCKER(IsDir).stubs().will(returnValue(true));
     MOCKER(GetEnv).stubs().will(returnValue(path));
+    MOCKER(IsExist).stubs().will(returnValue(true));
     MOCKER(&ProfConfig::GetOutputPathFromRemote).stubs().will(returnValue(outPath));
     ProfConfig::Instance().profConfig_.isSimulator = true;
     ProfDataCollect profDataCollect;
@@ -966,6 +975,7 @@ TEST_F(ProfDataCollectTest, test_not_gen_operand_data_because_write_data_error)
     MOCKER(aclrtMallocHostImplOrigin).stubs().will(returnValue(0));
     MOCKER(aclrtFreeHostImplOrigin).stubs().will(returnValue(0));
     MOCKER(aclrtMemcpyImplOrigin).stubs().will(returnValue(0));
+    MOCKER(WriteBinary).stubs().will(returnValue(static_cast<size_t>(0)));
     profDataCollect.GenRecordData(1, nullptr, OPERAND_RECORD);
     auto path = profDataCollect.GetAicoreOutputPath(0);
     EXPECT_EQ(path, "");

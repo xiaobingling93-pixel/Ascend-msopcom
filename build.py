@@ -80,6 +80,7 @@ if __name__ == "__main__":
     if 'test' in args.command:
         build_path = os.path.join(current_dir, "build_ut")
         cmake_cmd.append("-DBUILD_TESTS=ON")
+        cmake_cmd.append("-DCMAKE_BUILD_TYPE=Debug")
         make_cmd.append("injectionTest")
         install_cmd = ""
         test_cmd ="./test/injectionTest"

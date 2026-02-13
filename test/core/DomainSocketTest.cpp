@@ -26,6 +26,7 @@
 #include <string>
 #include <sys/socket.h>
 #include <thread>
+#include <memory>
 #include "mockcpp/mockcpp.hpp"
 
 void AssertReadMessage(DomainSocketServer &server, std::size_t clientId, std::string const &message)
