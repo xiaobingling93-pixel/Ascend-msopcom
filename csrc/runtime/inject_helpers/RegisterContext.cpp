@@ -300,7 +300,9 @@ uint64_t RegisterContext::GetKernelOffsetByName(const std::string &kernelName) c
 {
     uint64_t kernelOffset = UINT64_MAX;
     for (size_t i = 0; i < kernelSymbolNames_.size(); i++) {
-        if (kernelName == kernelSymbolNames_[i]) {
+        if (kernelName == kernelSymbolNames_[i]
+            || kernelName + MIX_AIC_TAIL == kernelSymbolNames_[i]
+            || kernelName + MIX_AIV_TAIL == kernelSymbolNames_[i]) {
             kernelOffset = kernelOffsets_[i];
             break;
         }

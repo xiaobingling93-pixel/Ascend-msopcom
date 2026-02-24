@@ -138,6 +138,13 @@ TEST_F(RegisterContextTest, input_valid_kernel_name_then_get_offset_expect_succe
     ASSERT_EQ(regCtx_->GetKernelOffsetByName(name), expect);
 }
 
+TEST_F(RegisterContextTest, input_no_suffix_kernel_name_then_get_offset_expect_success)
+{
+    string name = "valid_kernel_1235";
+    uint64_t expect = 1;
+    ASSERT_EQ(regCtx_->GetKernelOffsetByName(name), expect);
+}
+
 TEST_F(RegisterContextTest, input_invalid_tiling_key_then_get_offset_expect_fail)
 {
     string name = "abc";
