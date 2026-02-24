@@ -128,11 +128,15 @@ void HijackedFuncOfAclrtLaunchKernelImpl::ProfPreForInstrProf(const std::functio
     if (ProfConfig::Instance().IsPCSamplingEnabled()) {
         uint8_t *memInfo = nullptr;
         uint64_t memSize = PrepareDbiTaskForInstrProf(INSTR_PROF_MODE_PC_SAMPLING, memInfo);
-        auto kernelAddr = launchCtx_->GetFuncContext()->GetKernelPC();
-        WriteFileByStream(JoinPath({ProfDataCollect::GetAicoreOutputPath(devId_), "pc_start_pcsampling.txt"}),
-            NumToHexString(kernelAddr), std::fstream::out, std::fstream::binary);
         profObj_->InstrProfData(stream, funcStub);
         profObj_->GenRecordData(memSize, memInfo, PCOFFSET_RECORD);
+        if (launchCtx_->GetDBIFuncCtx() == nullptr) {
+            WARN_LOG("Failed to get pcsampling start pc");
+        } else {
+            auto kernelAddr = launchCtx_->GetDBIFuncCtx()->GetKernelPC();
+            WriteFileByStream(JoinPath({ProfDataCollect::GetAicoreOutputPath(devId_), "pc_start_pcsampling.txt"}),
+                NumToHexString(kernelAddr), std::fstream::out, std::fstream::binary);
+        }
     }
         if (ProfConfig::Instance().IsTimelineEnabled()) {
         uint8_t *memInfo = nullptr;
