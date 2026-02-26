@@ -149,6 +149,17 @@ struct ParaBaseRegister {
     uint64_t size;
 };
 
+enum class RegisterValueType : uint64_t {
+    VAL_UINT64 = 0,
+    VAL_HALF,
+    VAL_FLOAT,
+};
+
+struct RegisterPayload {
+    RegisterValueType regValType;
+    uint64_t regVal;    // 动态插桩场景无法感知具体类型，统一使用uint64_保存和打印寄存器值，使用时根据 regValType 取值按对应格式解析
+};
+
 struct Register {
     uint64_t fmatrix;
     uint64_t fmatrixB;
@@ -194,6 +205,13 @@ struct Register {
     uint64_t sprL3dRptB;
     uint64_t sprPadding;
     uint64_t sprPaddingB;
+    uint64_t ctrl = 0x08ULL;
+    uint64_t fftsBaseAddr;
+    uint64_t fpc;
+    uint64_t quantPre;
+    uint64_t quantPost;
+    RegisterPayload lreluAlpha;
+    uint64_t rsv[4];    // 64字节对齐
 };
 
 enum class BlockType : uint8_t {
@@ -227,6 +245,7 @@ struct CheckParmsInfo {
     bool racecheck{};                                 // 是否开启竞争检测
     bool initcheck{};                                 // 是否开启未初始化检测
     bool synccheck{};                                 // 是否开启同步检测
+    bool registerCheck{};                             // 是否开启寄存器检测
 };
 
 struct HostMemoryInfo {
@@ -259,15 +278,19 @@ struct SimtRecordBlockHeadImpl {
 using SimtRecordBlockHead = StructAlignBy<SimtRecordBlockHeadImpl, 64UL>;
 static_assert(sizeof(SimtRecordBlockHead) % 64UL == 0UL, "SimtRecordBlockHead size should aligned by 64 bytes");
 
+constexpr int64_t C220_A2_A3_MAXCORE_NUM = 75;
 struct RecordGlobalHeadImpl {
     uint64_t securityVal = RECORD_HEAD_SECURITY_VALUE;
     CheckParmsInfo checkParms{};
     KernelInfo kernelInfo{};
     SimtInfo simtInfo{};
     bool supportSimt{false};                // 当前芯片类型是否支持simt
+
+    Register registers[C220_A2_A3_MAXCORE_NUM]; // 保存核上寄存器状态，数组下标对应coreID
 };
 
 using RecordGlobalHead = StructAlignBy<RecordGlobalHeadImpl, 64UL>;
+static_assert(sizeof(Register) % 64UL == 0UL, "Register size should aligned by 64 bytes");
 static_assert(sizeof(RecordGlobalHead) % 64UL == 0UL, "RecordGlobalHead size should aligned by 64 bytes");
 
 /// kernelType表示当前算子的类型，只记录在了0核的头部；blockType代表当前核记录的信息属于VEC还是CUBE
@@ -280,7 +303,6 @@ struct RecordBlockHeadImpl {
     uint64_t recordWriteCount{};            // 已经写入的记录数量
     uint64_t offset{};                      // 所有记录对应的offset
     uint64_t writeOffset{};                 // 已经写入的记录对应的offset
-    Register registers{};
     BlockInfo blockInfo{};
     uint32_t hostMemoryNum{};               // 算子host侧memory输入个数
 #if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
@@ -455,6 +477,7 @@ struct SanitizerConfig {
     bool raceCheck;
     bool initCheck;
     bool syncCheck;
+    bool registerCheck;
     bool checkDeviceHeap;
     bool checkCannHeap;
     bool leakCheck;

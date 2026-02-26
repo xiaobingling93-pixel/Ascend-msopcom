@@ -44,6 +44,42 @@
 namespace {
 std::mutex g_instrMutex;
 
+Register g_registers[C220_A2_A3_MAXCORE_NUM] = {}; // 保存寄存器状态，向下一个算子传递
+
+inline bool CheckRegIdxValid(int64_t regIdx)
+{
+    return (regIdx >= 0) && (regIdx <= C220_A2_A3_MAXCORE_NUM - 1);
+}
+
+// 获取跟当前 coreid 匹配的寄存器状态保存结构
+inline int64_t GetRegisterIdx()
+{
+    int64_t coreId{};
+
+#if defined(__CCE_IS_AICORE__) && __CCE_IS_AICORE__ == 1
+#if defined(__DAV_C220__) || defined(__DAV_C220_VEC__) || defined(__DAV_C220_CUBE__) || \
+    (defined(__NPU_ARCH__) && __NPU_ARCH__ == 3101)
+#ifdef SIMT_MODE
+    coreId = bisheng::cce::simt::get_coreid();
+#else
+    coreId = get_coreid();
+#endif // SIMT_MODE
+#endif // DAV
+
+    // A2/A3偶数卡：vec核编号范围：[25, 74]，cube核范围：[0, 24]，获取到后可以直接当索引使用
+    if (coreId >= 0 && coreId <= C220_A2_OR_A3_EVEN_DEVICE_VEC_PHYS_CORE_END_IDS) {
+        return coreId;
+    }
+
+    // A3奇数卡：vec核编号范围：[32793, 32842]，cube核范围：[32768, 32792]，需要转换一下把范围限制到0-74
+    if (coreId >= C220_A3_ODD_DEVICE_VEC_CUBE_CORE_START_IDS && coreId <= C220_A3_ODD_DEVICE_VEC_PHYS_CORE_END_IDS) {
+        return coreId - C220_A3_ODD_DEVICE_VEC_CUBE_CORE_START_IDS;
+    }
+#endif // __CCE_IS_AICORE__
+    return coreId;
+}
+
+
 inline bool CheckBlockDimValid(uint64_t blockDim)
 {
     if (blockDim == 0) {
@@ -138,6 +174,14 @@ inline bool AssignMemSize(RecordGlobalHead &head, uint64_t blockDim, DeviceType 
 // calculate total block dim
 inline bool InitGlobalHead(RecordGlobalHead &head, uint64_t blockDim, KernelType kernelType, uint32_t hostMemoryNum)
 {
+    // 继承上一个算子的寄存器状态
+    aclError error = aclrtMemcpyImplOrigin(head.registers, sizeof(Register) * C220_A2_A3_MAXCORE_NUM,
+        g_registers, sizeof(Register) * C220_A2_A3_MAXCORE_NUM, ACL_MEMCPY_HOST_TO_HOST);
+    if (error != ACL_ERROR_NONE) {
+        ERROR_LOG("init memcpy g_registers error: %d", error);
+        return false;
+    }
+
     SanitizerConfig cliConfig = SanitizerConfigManager::Instance().GetConfig();
     head.checkParms.cacheSize = cliConfig.cacheSize;
     head.checkParms.checkBlockId = cliConfig.checkBlockId;
@@ -145,6 +189,7 @@ inline bool InitGlobalHead(RecordGlobalHead &head, uint64_t blockDim, KernelType
     head.checkParms.racecheck = cliConfig.raceCheck;
     head.checkParms.initcheck = cliConfig.initCheck;
     head.checkParms.synccheck = cliConfig.syncCheck;
+    head.checkParms.registerCheck = cliConfig.registerCheck;
     head.kernelInfo.kernelType = kernelType;
     head.kernelInfo.kernelParamNum = KernelContext::Instance().GetKernelParamNum();
     DeviceType deviceType = GetDeviceTypeBySocVersion(DeviceContext::Local().GetSocVersion());
@@ -399,9 +444,13 @@ RecordBlockHead const &head, uint64_t blockSize)
     return sizeof(shadowMemoryHead) + records.size() * sizeof(ShadowMemoryRecord);
 }
 
-void ReportParaBase(RecordBlockHead const &head, ParaBaseRegister &paraBase, bool &isReportParaBase)
+void ReportParaBase(RecordGlobalHead const &head, ParaBaseRegister &paraBase, bool &isReportParaBase)
 {
-    const auto &paraBaseInfo = head.registers.paraBase;
+    int64_t regIdx = GetRegisterIdx();
+    if (!CheckRegIdxValid(regIdx)) {
+        return;
+    }
+    const auto &paraBaseInfo = head.registers[regIdx].paraBase;
     if (!isReportParaBase && paraBaseInfo.addr != ILLEGAL_ADDR && paraBaseInfo.size != 0) {
         ReportMalloc(paraBaseInfo.addr, paraBaseInfo.size, MemInfoSrc::BYPASS, MemInfoDesc::PARA_BASE);
         ReportMemset(paraBaseInfo.addr, paraBaseInfo.size, MemInfoSrc::BYPASS, MemInfoDesc::PARA_BASE);
@@ -484,6 +533,15 @@ void ReportMemInfo(uint8_t *memInfoHost, uint8_t *memInfo, uint64_t blockSize, u
         ERROR_LOG("finalize memcpy RecordGlobalHead error: %d", error);
         return;
     }
+
+    // 保存上一个算子的寄存器状态，以供下一个算子继承
+    error = aclrtMemcpyImplOrigin(g_registers, sizeof(Register) * C220_A2_A3_MAXCORE_NUM,
+        globalHead->registers, sizeof(Register) * C220_A2_A3_MAXCORE_NUM, ACL_MEMCPY_HOST_TO_HOST);
+    if (error != ACL_ERROR_NONE) {
+        ERROR_LOG("finalize memcpy g_registers error: %d", error);
+        return;
+    }
+
     auto checkBlockId = globalHead->checkParms.checkBlockId;
     uint64_t totalBlockDim = globalHead->kernelInfo.totalBlockDim;
     DEBUG_LOG("sanitizer finalize with blockDim: %lu, totalBlockDim: %lu", blockDim, totalBlockDim);
@@ -509,7 +567,7 @@ void ReportMemInfo(uint8_t *memInfoHost, uint8_t *memInfo, uint64_t blockSize, u
             DEBUG_LOG("no kernel instruction record on subBlock %lu", blockIdx);
         } else {
             /// 上报ParaBase地址信息
-            ReportParaBase(*head, paraBase, isReportParaBase);
+            ReportParaBase(*globalHead, paraBase, isReportParaBase);
 
             // 3. copy simd records in block to host
             if (!CopySimdRecordToHost(memInfoHost + hostRecordOffset, memInfo + sizeof(RecordGlobalHead) +
@@ -630,6 +688,15 @@ bool InitRecordHeaders(RecordGlobalHead &recordGlobalHead, uint8_t *memInfo, uin
     auto &devMemManager = DevMemManager::Instance();
 
     // 1. 初始化 RecordGlobalHead
+    int64_t regIdx = GetRegisterIdx();
+    if (!CheckRegIdxValid(regIdx)) {
+        return false;
+    }
+    if (InAclNewLaunchCallStack()) {
+ 	    recordGlobalHead.registers[regIdx].paraBase.size = ArgsManager::Instance().GetArgsSize();
+ 	} else {
+ 	    recordGlobalHead.registers[regIdx].paraBase.size = KernelContext::Instance().GetArgsSize();
+ 	}
     error = aclrtMemcpyImplOrigin(memInfo, sizeof(recordGlobalHead),
                                   static_cast<const void*>(&recordGlobalHead),
                                   sizeof(recordGlobalHead), ACL_MEMCPY_HOST_TO_DEVICE);
@@ -640,11 +707,6 @@ bool InitRecordHeaders(RecordGlobalHead &recordGlobalHead, uint8_t *memInfo, uin
     }
 
     RecordBlockHead recordBlockHead{};
-    if (InAclNewLaunchCallStack()) {
- 	    recordBlockHead.registers.paraBase.size = ArgsManager::Instance().GetArgsSize();
- 	} else {
- 	    recordBlockHead.registers.paraBase.size = KernelContext::Instance().GetArgsSize();
- 	}
     recordBlockHead.hostMemoryNum = hostMemoryNum;
     uint64_t blockHeadOffset = 0UL;
     std::vector<HostMemoryInfo> hostMems = CopyExtraMallocToHostMemory();

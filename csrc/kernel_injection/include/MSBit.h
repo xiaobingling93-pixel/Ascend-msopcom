@@ -113,7 +113,8 @@ enum class InstrType {
     LOOP3_PARA = 90,
     COPY_MATRIX_CC_TO_GM_F32_A5,
     COPY_MATRIX_CC_TO_GM_S32_A5,
-    // reserved 93-94
+    MOVE_MASK_IMM,
+    // reserved 94
     SIMT_LD_U8 = 95,
     SIMT_LD_S8,
     SIMT_LD_U16,
@@ -178,7 +179,14 @@ enum class InstrType {
     IMG2COLV2_CBUF_TO_CB_B8,
     IMG2COLV2_CBUF_TO_CB_B32,
     COPY_CBUF_TO_UBUF = 158,
-    // reserved 159-166
+    SET_CTRL,
+    SET_FFTS_BASE_ADDR,
+    SET_FPC,
+    SET_QUANT_PRE,
+    SET_QUANT_POST,
+    SET_LRELU_ALPHA,
+    MOVE_MASK_0,
+    MOVE_MASK_1,
     COPY_CBUF_TO_FBUF = 167,
     COPY_MATRIX_CC_TO_CBUF_F32,
     COPY_MATRIX_CC_TO_CBUF_S32,
