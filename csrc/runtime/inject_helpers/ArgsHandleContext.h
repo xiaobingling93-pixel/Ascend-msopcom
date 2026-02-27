@@ -79,6 +79,7 @@ public:
 
     bool IsFinalized() const { return finalized_; }
 
+    size_t CalcUserArgsSize(void) const;
     // 重放记录生成新的aclrtArgsHandle
     aclrtArgsHandle GenerateArgsHandle();
 
@@ -87,7 +88,6 @@ public:
 #endif
 
 private:
-    size_t CalcUserArgsSize(void) const;
     bool ReplayArgs(void);
     bool UpdateNormalTaskArgsAddr(OpMemInfo &memInfo) const;
 

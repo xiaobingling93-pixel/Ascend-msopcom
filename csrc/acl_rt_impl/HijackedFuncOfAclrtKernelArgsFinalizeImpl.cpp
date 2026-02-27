@@ -40,5 +40,6 @@ aclError HijackedFuncOfAclrtKernelArgsFinalizeImpl::Post(aclError ret)
     }
     auto argsHandleCtx = std::static_pointer_cast<ArgsHandleContext>(ctx);
     argsHandleCtx->Finalize();
+    ArgsManager::Instance().SetArgsSize(argsHandleCtx->CalcUserArgsSize());
     return ret;
 }
