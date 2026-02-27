@@ -16,81 +16,69 @@
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
 
-import os
-import sys
-import logging
-import subprocess
-import multiprocessing
 import argparse
+import logging
+import multiprocessing
+import os
+import subprocess
+import sys
+import traceback
+from pathlib import Path
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
-def exec_cmd(cmd):
-    result = subprocess.run(cmd, capture_output=False, text=True, timeout=36000)
-    if result.returncode != 0:
-        logging.error("execute command %s failed, please check the log", " ".join(cmd))
-        sys.exit(result.returncode)
+class BuildManager:
+    def __init__(self):
+        self.project_root = Path(__file__).resolve().parent
+        self.build_parallelism = multiprocessing.cpu_count()
+        argument_parser = argparse.ArgumentParser(description='Build script with optional testing')
+        argument_parser.add_argument('command', nargs='*', default=[],
+                                     choices=[[], 'local', 'test'],
+                                     help='Command to execute (python build.py [ |local|test])')
+        argument_parser.add_argument('-r', '--revision',
+                                     help='Build with specific revision or tag')
+        self.parsed_arguments = argument_parser.parse_args()
 
+    def _execute_command(self, command_sequence, timeout_seconds=36000, cwd=None):
+        """执行外部命令，失败时抛出异常"""
+        logging.info("Running: %s", " ".join(command_sequence))
+        subprocess.run(command_sequence, timeout=timeout_seconds, check=True, cwd=cwd)
 
-def execute_build(build_path, cmake_cmd, make_cmd, install_cmd):
-    if not os.path.exists(build_path):
-        os.makedirs(build_path, mode=0o755)
-    os.chdir(build_path)
-    exec_cmd(cmake_cmd)
-    exec_cmd(make_cmd)
-    # 只有构建时才需要安装和打包，测试时不需要
-    if install_cmd != "":
-        exec_cmd(install_cmd)
+    def run(self):
+        os.chdir(self.project_root)
 
+        # 非 local 场景时按需更新代码；local 场景不更新代码只使用本地代码
+        if 'local' not in self.parsed_arguments.command:
+            from download_dependencies import DependencyManager
+            DependencyManager(self.parsed_arguments).run()
 
-def execute_test(build_path, test_cmd):
-    os.chdir(build_path)
-    if test_cmd != "":
-        os.chdir(test_cmd.rsplit('/', 1)[0])
-        cmd = "./" + test_cmd.rsplit('/', 1)[1]
-        os.environ['LD_LIBRARY_PATH'] = os.getcwd() + "/stub"
-        exec_cmd(cmd)
+        if 'test' in self.parsed_arguments.command:
+            # -------------------- 单元测试 --------------------
+            build_dir = self.project_root / "build_ut"
+            test_dir = build_dir / "test"
+            build_dir.mkdir(exist_ok=True)
+            os.chdir(build_dir)
 
+            self._execute_command(["cmake", "..", "-DBUILD_TESTS=ON", "-DCMAKE_BUILD_TYPE=Debug"])
+            self._execute_command(["make", "-j", str(self.build_parallelism), "injectionTest"])
+            os.environ['LD_LIBRARY_PATH'] = str(test_dir / "stub") + os.pathsep + os.environ.get('LD_LIBRARY_PATH', '')
+            self._execute_command(["./injectionTest"], cwd=str(test_dir))
 
-def create_arg_parser():
-    parser = argparse.ArgumentParser(description='Build script with optional testing')
-    parser.add_argument('command', nargs='*', default=[],
-                        choices=[[], 'local', 'test'],
-                        help='Command to execute (python build.py [ |local|test])')
-    parser.add_argument('-r', '--revision',
-                        help="Build with specific revision or tag")
-    return parser
+        else:
+            # -------------------- 产品构建 --------------------
+            build_dir = self.project_root / "build"
+            build_dir.mkdir(exist_ok=True)
+            os.chdir(build_dir)
+
+            self._execute_command(["cmake", ".."])
+            self._execute_command(["make", "-j", str(self.build_parallelism)])
+            self._execute_command(["make", "install"])  # 安装步骤
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    parser = create_arg_parser()
-    args = parser.parse_args()
-    current_dir = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-    os.chdir(current_dir)
-    cpu_cores = multiprocessing.cpu_count()
-
-    build_path = os.path.join(current_dir, "build")
-    cmake_cmd = ["cmake", ".."]
-    make_cmd = ["make", "-j", str(cpu_cores)]
-    install_cmd = ["make", "install"]
-    test_cmd = ""
-
-
-    # ut使用单独的目录构建，与build区分开，避免相互影响，并传入对应的参数
-    if 'test' in args.command:
-        build_path = os.path.join(current_dir, "build_ut")
-        cmake_cmd.append("-DBUILD_TESTS=ON")
-        cmake_cmd.append("-DCMAKE_BUILD_TYPE=Debug")
-        make_cmd.append("injectionTest")
-        install_cmd = ""
-        test_cmd ="./test/injectionTest"
-
-    # 解析入参是否为local，非local场景时按需更新代码；local场景不更新代码只使用本地代码
-    if 'local' not in args.command:
-        from download_dependencies import update_submodule
-        update_submodule(args)
-
-    # 执行构建
-    execute_build(build_path, cmake_cmd, make_cmd, install_cmd)
-    # 执行测试
-    execute_test(build_path, test_cmd)
+    try:
+        BuildManager().run()
+    except Exception:
+        logging.error(f"Unexpected error: {traceback.format_exc()}")
+        sys.exit(1)
