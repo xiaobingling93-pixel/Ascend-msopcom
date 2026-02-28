@@ -376,7 +376,10 @@ void ReportOpMallocInfo(const AclrtLaunchArgsInfo &launchArgs, OpMemInfo &opMemI
         // 内存分配是通过获取tensor信息模拟的，无实际的桩函数记录，因此需要设为STORE，防止未初始化读误报
         ReportMemset(it.addr, it.length, it.memInfoSrc, it.memInfoDesc, it.paramsNo);
     }
-
+    // 为0时认为没有tiling信息，提前返回
+    if (launchArgs.placeHolderNum == 0U) {
+        return;
+    }
     /// 所有placeHolderArray中最大的addrOffset对应的是tilingAddr地址偏移，此时的dataOffset为tilingData偏移
     uint32_t tilingDataOffset{};
     uint32_t tilingAddrOffset{};

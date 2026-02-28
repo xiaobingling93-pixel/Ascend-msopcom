@@ -24,7 +24,7 @@ bool ArgsRawContext::GetTilingData(std::vector<uint8_t> &data) const
 {
     // we do not know tiling data size, it store in meta section
     if (placeHolderArray_.empty() || data.empty()) {
-        WARN_LOG("placeHolderArray_ size=%lu, tiling_data_size=%lu, all must greater than 0", placeHolderArray_.size(), data.size());
+        DEBUG_LOG("placeHolderArray_ size=%lu, tiling_data_size=%lu", placeHolderArray_.size(), data.size());
         return false;
     }
     // 最后一个 placeholder 对应的 dataOffset 处保存的是 tilingData
