@@ -15,7 +15,6 @@
 # MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
 # See the Mulan PSL v2 for more details.
 # -------------------------------------------------------------------------
-
 import argparse
 import logging
 import multiprocessing
@@ -29,19 +28,33 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 class BuildManager:
+    """
+    统一构建管理：依赖拉取 → CMake 配置 → 并行编译 → 安装 / 测试。
+
+    用法:
+        python build.py                  完整构建（拉取依赖 + Release 编译）
+        python build.py local            本地构建（跳过依赖拉取，Release 编译）
+        python build.py test             单元测试（拉取依赖 + Debug 编译 + 执行测试）
+        python build.py test local       单元测试（跳过依赖拉取, Debug 编译 + 执行测试）        
+        python build.py -r <revision>    指定依赖的内部源码仓的 Git 分支/标签/commit
+
+    参数说明:
+        - 参数: command : 构建动作: 为空时为全构建, local 为跳过依赖下载, test 为运行单元测试。    
+        - 参数: -r, --revision : 指定 Git 修订版本或标签用于依赖检出。
+    """
+
     def __init__(self):
         self.project_root = Path(__file__).resolve().parent
-        self.build_parallelism = multiprocessing.cpu_count()
-        argument_parser = argparse.ArgumentParser(description='Build script with optional testing')
+        self.build_jobs = multiprocessing.cpu_count()
+        argument_parser = argparse.ArgumentParser(description='Build the project and optionally run tests.')
         argument_parser.add_argument('command', nargs='*', default=[],
                                      choices=[[], 'local', 'test'],
-                                     help='Command to execute (python build.py [ |local|test])')
+                                     help='Build action: omit for full build, "local" to skip dependency download, "test" to run unit tests')
         argument_parser.add_argument('-r', '--revision',
-                                     help='Build with specific revision or tag')
+                                     help='Specify Git revision for internal dependent repo.')
         self.parsed_arguments = argument_parser.parse_args()
 
     def _execute_command(self, command_sequence, timeout_seconds=36000, cwd=None):
-        """执行外部命令，失败时抛出异常"""
         logging.info("Running: %s", " ".join(command_sequence))
         subprocess.run(command_sequence, timeout=timeout_seconds, check=True, cwd=cwd)
 
@@ -55,25 +68,25 @@ class BuildManager:
 
         if 'test' in self.parsed_arguments.command:
             # -------------------- 单元测试 --------------------
-            build_dir = self.project_root / "build_ut"
-            test_dir = build_dir / "test"
-            build_dir.mkdir(exist_ok=True)
-            os.chdir(build_dir)
+            unit_test_build_dir = self.project_root / "build_ut"
+            unit_test_build_dir.mkdir(exist_ok=True)
+            os.chdir(unit_test_build_dir)
 
             self._execute_command(["cmake", "..", "-DBUILD_TESTS=ON", "-DCMAKE_BUILD_TYPE=Debug"])
-            self._execute_command(["make", "-j", str(self.build_parallelism), "injectionTest"])
+            self._execute_command(["make", "-j", str(self.build_jobs), "injectionTest"])
+
+            test_dir = unit_test_build_dir / "test"
             os.environ['LD_LIBRARY_PATH'] = str(test_dir / "stub") + os.pathsep + os.environ.get('LD_LIBRARY_PATH', '')
             self._execute_command(["./injectionTest"], cwd=str(test_dir))
-
         else:
             # -------------------- 产品构建 --------------------
-            build_dir = self.project_root / "build"
-            build_dir.mkdir(exist_ok=True)
-            os.chdir(build_dir)
+            product_build_dir = self.project_root / "build"
+            product_build_dir.mkdir(exist_ok=True)
+            os.chdir(product_build_dir)
 
             self._execute_command(["cmake", ".."])
-            self._execute_command(["make", "-j", str(self.build_parallelism)])
-            self._execute_command(["make", "install"])  # 安装步骤
+            self._execute_command(["make", "-j", str(self.build_jobs)])
+            self._execute_command(["make", "install"])
 
 
 if __name__ == "__main__":

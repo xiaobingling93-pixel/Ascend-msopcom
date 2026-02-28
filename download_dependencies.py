@@ -28,6 +28,19 @@ import traceback
 from pathlib import Path
 
 class DependencyManager:
+    """
+    依赖下载管理：根据 dependencies.json 拉取源码仓(Git submodule)与二进制包(artifacts)。
+
+    用法:
+        python download_dependencies.py                  下载生产依赖：源码仓(Git submodule) + 二进制包(artifacts)
+        python download_dependencies.py test             下载测试依赖：源码仓(Git submodule) + 二进制包(artifacts)
+        python download_dependencies.py local            跳过所有下载：直接返回不处理        
+        python download_dependencies.py -r <revision>    指定内部源码仓的 Git 分支/标签/commit
+
+    参数说明:
+        - 参数: command : 执行模式: 为空时下载生产依赖, test 为下载测试依赖, local 为跳过下载。
+        - 参数: -r, --revision : 指定 Git 修订版本或标签用于依赖检出。
+    """
 
     def __init__(self, args):
         self.args, self.root = args, Path(__file__).resolve().parent
@@ -58,7 +71,7 @@ class DependencyManager:
         self._exec_shell_cmd(cmd, cwd=mod_dir)
 
     def proc_submodule(self, submodules):
-        logging.info("=== Download git submodules ===")
+        logging.info("=== Download git submodules start ===")
         third = [m for m in submodules if "third" in m]
         builtin = [m for m in submodules if m not in third]
         base = ["git", "submodule", "update", "--init", "--progress", "--depth=1", "--jobs=4"]
@@ -69,9 +82,10 @@ class DependencyManager:
             self._exec_shell_cmd(base + ["--remote"] + builtin, msg="Fetching built-in submodules...")
             for m in builtin:
                 self._download_submodule_recursively(m)
+        logging.info("=== Download git submodules end ===")
 
     def proc_artifact(self, artifacts, spec):
-        logging.info("=== Downloading artifacts ===")
+        logging.info("=== Download artifacts start ===")
         for name in artifacts:
             target = self.root / spec[name]["path"]
             if target.exists() and any(target.iterdir()):
@@ -82,7 +96,7 @@ class DependencyManager:
             with tempfile.TemporaryDirectory() as td:
                 archive_path = Path(td) / Path(url).name
                 self._exec_shell_cmd(["curl", "-Lfk", "--retry", "5", "--retry-delay", "2",
-                                      "-o", str(archive_path), url], msg=f"Downloading {name}")
+                                      "-o", str(archive_path), url], msg=f"Download {name} ...")
                 if sha and hashlib.sha256(archive_path.read_bytes()).hexdigest() != sha:
                     sys.exit(f"SHA256 mismatch for {name}")
 
@@ -103,6 +117,7 @@ class DependencyManager:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.move(str(source), str(target))
                 logging.info(f"Download {name} successfully!")
+        logging.info("=== Download artifacts end ===")
 
     def run(self):
         if self.is_local:
@@ -119,16 +134,19 @@ class DependencyManager:
         if submodules:
             self.proc_submodule(submodules)
 
-        logging.info("=== Dependencies download successfully ===")
-
 def main():
     logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
-    parser = argparse.ArgumentParser(description='Download dependencies with optional testing')
+    parser = argparse.ArgumentParser(description='Download project dependencies (git submodules and artifacts) based on dependencies.json')
     parser.add_argument('command', nargs='*', default=[], choices=[[], 'local', 'test'],
-                        help="Execution mode. Local stands for without download. Test stands for building test case.")
-    parser.add_argument('-r', '--revision', help="Build with specific revision or tag")
+                        help='Execution mode: omit to download prod dependencies, "local" to skip downloads, "test" to download test dependencies')
+    parser.add_argument('-r', '--revision', help="Specify Git revision for internal dependent repo.")
     try:
         DependencyManager(parser.parse_args()).run()
+        logging.info("")
+        logging.info("=" * 50)
+        logging.info("  ALL DEPENDENCIES DOWNLOADED SUCCESSFULLY!   ")
+        logging.info("=" * 50)
+        logging.info("")
     except Exception as _:
         logging.error(f"Unexpected error: {traceback.format_exc()}")
         sys.exit(1)
