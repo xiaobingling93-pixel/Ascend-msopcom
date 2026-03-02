@@ -144,7 +144,7 @@ def main():
         DependencyManager(parser.parse_args()).run()
         logging.info("")
         logging.info("=" * 50)
-        logging.info("  ALL DEPENDENCIES DOWNLOADED SUCCESSFULLY!   ")
+        logging.info("  MsOpCom DEPENDENCIES DOWNLOADED SUCCESSFULLY!   ")
         logging.info("=" * 50)
         logging.info("")
     except Exception as _:
