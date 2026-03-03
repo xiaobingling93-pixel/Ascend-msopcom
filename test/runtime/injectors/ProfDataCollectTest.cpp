@@ -352,10 +352,10 @@ TEST_F(ProfDataCollectTest, get_bb_count_success)
     ASSERT_TRUE(profDataCollect.ProfData(stream, func));
 
     DeviceContext::Local().SetSocVersion("Ascend910B");
-    auto ret = WriteFileByStream(JoinPath({dumpPath, "kernel1Stub.o.bbbmap.0"}), "1");
+    auto ret = WriteStringToFile(JoinPath({dumpPath, "kernel1Stub.o.bbbmap.0"}), "1");
     ASSERT_TRUE(profDataCollect.ProfData(stream, func));
 
-    WriteFileByStream(JoinPath({dumpPath, "kernel1.o"}), "1");
+    WriteStringToFile(JoinPath({dumpPath, "kernel1.o"}), "1");
     profDataCollect.GenBBcountFile(1, 2, memInfo);
     RemoveAll(path);
     RemoveAll(dumpPath);
@@ -376,7 +376,7 @@ TEST_F(ProfDataCollectTest, get_bb_count_failed)
     std::string text;
     MOCKER(&BBCountDumper::GenExtraAndReturnName).stubs().will(returnValue(text));
 
-    WriteFileByStream(JoinPath({dumpPath, "kernel1.o"}), "1");
+    WriteStringToFile(JoinPath({dumpPath, "kernel1.o"}), "1");
     profDataCollect.GenBBcountFile(1, 2, memInfo);
     RemoveAll(path);
     RemoveAll(dumpPath);

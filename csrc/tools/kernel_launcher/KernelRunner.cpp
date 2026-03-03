@@ -138,7 +138,7 @@ bool KernelRunner::InitInput(const Param &in)
     CHECK_RT_RESULT(rtAPI_.CheckRtResult(rtAPI_.RtMallocHost(&hostInputPtr, dataSize),
                                          "rtMallocHost"))
     hostInputPtrs_.emplace_back(hostInputPtr);
-    if (!ReadFile(in.dataPath, (uint8_t *) hostInputPtr, dataSize)) {
+    if (!ReadFile(in.dataPath, (uint8_t *) hostInputPtr, dataSize, true)) {
         return false;
     }
     void *deviceInputPtr;
@@ -219,7 +219,7 @@ bool KernelRunner::InitTiling(const Param &tiling)
     CHECK_RT_RESULT(rtAPI_.CheckRtResult(rtAPI_.RtMallocHost(&hostInputPtr, dataSize),
                                          "rtMallocHost"))
     hostInputPtrs_.emplace_back(hostInputPtr);
-    if (!ReadFile(tiling.dataPath, (uint8_t *) hostInputPtr, dataSize)) {
+    if (!ReadFile(tiling.dataPath, (uint8_t *) hostInputPtr, dataSize, true)) {
         return false;
     }
     void *deviceInputPtr;

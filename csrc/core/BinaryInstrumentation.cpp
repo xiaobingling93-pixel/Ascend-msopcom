@@ -39,7 +39,7 @@ constexpr mode_t DEFAULT_UMASK_FOR_LOG_FILE = 0027;
 bool ParseFirstSymbol(std::string const &text, std::string const &property, std::string &symbol)
 {
     std::vector<std::string> lines;
-    Split(text, std::back_inserter(lines), "\n");
+    SplitString(text, '\n', lines);
 
     constexpr std::size_t propertyIndex = 1;
     constexpr std::size_t typeIndex = 2;
@@ -160,7 +160,7 @@ bool CustomDBI::GenerateOrderingFile(std::string const &kernelFile,
     }
 
     std::string ordering = kernelSymbol + "\n" + probeSymbol;
-    if (!WriteFileByStream(orderingFile, ordering)) {
+    if (!WriteStringToFile(orderingFile, ordering)) {
         WARN_LOG("write ordering file failed");
         return false;
     }

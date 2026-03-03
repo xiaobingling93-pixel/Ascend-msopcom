@@ -67,7 +67,7 @@ uint64_t BBCountDumper::GetMemSize(uint64_t regId, const std::string& outputPath
     std::string outPath = outputPath.empty() ? GetOutputDir() : outputPath;
     std::string filePath = JoinPath({outPath,
                                      GetOutFileName(DataType::BLOCKMAP, regId) + "." + to_string(subKernelID)});
-    if (!IsPathExists(filePath) || !CheckPathValid(filePath, PATH_TYPE::FILE)) {
+    if (!IsPathExists(filePath) || !CheckInputFileValid(filePath, "bin")) {
         WARN_LOG("check file path %s failed", filePath.c_str());
         return 0;
     }

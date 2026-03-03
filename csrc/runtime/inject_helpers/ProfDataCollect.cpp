@@ -569,7 +569,7 @@ void DataCollectWithSimulator::ProfInit(const void *hdl, const void *stubFunc, b
         CopyAiCoreBinFile(hdl);
     }
     std::string basicInfoTxt = JoinPath({SharedRecord::Instance().GetTmpDumpPath(), "object_dump.txt"});
-    WriteFileByStream(basicInfoTxt, outputPath_ + '\n' + kernelName_);
+    WriteStringToFile(basicInfoTxt, outputPath_ + '\n' + kernelName_);
     uint64_t tiling = 0;
     uint64_t pcStart = 0;
     if (launchCtx_ != nullptr) {
@@ -587,8 +587,8 @@ void DataCollectWithSimulator::ProfInit(const void *hdl, const void *stubFunc, b
         }
     }
     if (pcStart != 0) {
-        WriteFileByStream(JoinPath({outputPath_, "pc_start_addr.txt"}),
-                          NumToHexString(pcStart), std::fstream::out, std::fstream::binary);
+        WriteStringToFile(JoinPath({outputPath_, "pc_start_addr.txt"}),
+                          NumToHexString(pcStart), std::fstream::out | std::fstream::binary);
     }
     // 需要先复制aicore.o到dump下
     if (GetEnv("ENABLE_CA_LOG_TRANS") == "true") {
@@ -784,8 +784,8 @@ void DataCollectInDevice::ProfInit(const void *hdl, const void *stubFunc, bool t
     }
     KernelContext::Instance().SetMC2Flag();
     if (pcStart != 0) {
-        WriteFileByStream(JoinPath({outputPath_, "pc_start_addr.txt"}),
-                          NumToHexString(pcStart), std::fstream::out, std::fstream::binary);
+        WriteStringToFile(JoinPath({outputPath_, "pc_start_addr.txt"}),
+                          NumToHexString(pcStart), std::fstream::out | std::fstream::binary);
     }
 }
 

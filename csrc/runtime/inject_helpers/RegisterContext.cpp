@@ -117,7 +117,7 @@ bool GetSymInfoFromBinary(const char *data, uint64_t length, vector<string> &ker
     }
  
     vector<string> lines;
-    Split(output, std::back_inserter(lines), "\n");
+    SplitString(output, '\n', lines);
     constexpr size_t kernelNameCol = 5;
     constexpr size_t kernelOffsetCol = 0;
     int badLineCnt = 0;

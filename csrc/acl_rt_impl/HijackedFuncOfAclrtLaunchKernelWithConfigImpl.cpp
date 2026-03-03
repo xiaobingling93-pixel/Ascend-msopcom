@@ -135,8 +135,8 @@ void HijackedFuncOfAclrtLaunchKernelWithConfigImpl::ProfPreForInstrProf(const st
             WARN_LOG("Failed to get pcsampling start pc");
         } else {
             auto kernelAddr = launchCtx_->GetDBIFuncCtx()->GetKernelPC();
-            WriteFileByStream(JoinPath({ProfDataCollect::GetAicoreOutputPath(devId_), "pc_start_pcsampling.txt"}),
-                NumToHexString(kernelAddr), std::fstream::out, std::fstream::binary);
+            WriteStringToFile(JoinPath({ProfDataCollect::GetAicoreOutputPath(devId_), "pc_start_pcsampling.txt"}),
+                NumToHexString(kernelAddr), std::fstream::out | std::fstream::binary);
         }
     }
     if (ProfConfig::Instance().IsTimelineEnabled()) {

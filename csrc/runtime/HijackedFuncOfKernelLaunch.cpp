@@ -105,8 +105,8 @@ void HijackedFuncOfKernelLaunch::ProfPreForInstrProf(const std::function<bool(vo
             .GetKernelAddr(KernelContext::StubFuncArgs{stubFuncPtr.value, nullptr}, kernelAddr)) {
             WARN_LOG("Can not get kernel addr for kernel start stub.");
         }
-        WriteFileByStream(JoinPath({ProfDataCollect::GetAicoreOutputPath(devId_), "pc_start_pcsampling.txt"}),
-                        NumToHexString(kernelAddr), std::fstream::out, std::fstream::binary);
+        WriteStringToFile(JoinPath({ProfDataCollect::GetAicoreOutputPath(devId_), "pc_start_pcsampling.txt"}),
+            NumToHexString(kernelAddr), std::fstream::out | std::fstream::binary);
         profObj_->InstrProfData(stm, funcStub);
         profObj_->GenRecordData(memSize, memInfo, PCOFFSET_RECORD);
     }

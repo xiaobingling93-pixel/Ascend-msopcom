@@ -128,7 +128,7 @@ bool GetSocVersionFromEnvVar(std::string &socVersion)
     }
     std::string pathFromEnv = ldEnv;
     std::vector<std::string> envs;
-    Split(pathFromEnv, std::back_inserter(envs), ":");
+    SplitString(pathFromEnv, ':', envs);
 
     for (const std::string &path: envs) {
         if (!StartsWith(path, ascendHomePath)) {

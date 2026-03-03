@@ -33,9 +33,6 @@ constexpr uint64_t MAX_MEM_BYTE_SIZE = 32212254720; // 30G for file and memory m
 const mode_t SAVE_DATA_FILE_AUTHORITY = 0640;
 constexpr int DIR_NAME_LENGTH_LIMIT = 2048;
 constexpr int FILE_NAME_LENGTH_LIMIT = 255;
-// 限制输入文件最大10G
-constexpr size_t INPUT_FILE_MAX_SIZE = 10uL * 1024 * 1024 * 1024;
-
 
 enum class PATH_TYPE {
     DIR = 0,
@@ -47,24 +44,6 @@ enum class FILE_TYPE {
     WRITE,
     EXECUTE
 };
-
-template<typename Iterator>
-void Split(std::string const &str, Iterator it, std::string const &seps)
-{
-    std::string::size_type fast = 0;
-    if (!seps.empty() && str.rfind(seps, 0) == 0) {
-        *it = "";
-        ++it;
-    }
-    std::string::size_type slow = str.find_first_not_of(seps);
-    for (; fast < str.length(); slow = str.find_first_not_of(seps, fast)) {
-        fast = str.find_first_of(seps, slow);
-        if (fast != slow) {
-            *it = str.substr(slow, fast - slow);
-            ++it;
-        }
-    }
-}
 
 bool Chmod(const std::string &filePath, mode_t fileAuthority);
 
@@ -142,36 +121,22 @@ bool RollbackPath(std::string &path, uint32_t rollNum);
 bool IsPathExists(const std::string &path);
 void RemoveAll(const std::string& filePath);
 size_t GetFileSize(const std::string &filePath);
-bool ReadFile(const std::string &filePath, uint8_t *buffer, size_t bufferSize);
+bool ReadFile(const std::string &filePath, uint8_t *buffer, size_t bufferSize, bool checkSize = false);
 size_t WriteBinary(const std::string &filename, const char *data, uint64_t length,
-                   std::ios_base::openmode extrMode = std::ios::trunc);
+                   std::ios_base::openmode mode = std::ios::out | std::ios::binary | std::ios::trunc);
 bool IsSoftLinkRecursively(const std::string &path);
 bool PathLenCheckValid(const std::string &checkPath);
 bool CheckOwnerPermission(std::string &path, std::string &msg);
 bool CheckFileSizeValid(const std::string &path, size_t threshold);
-bool CheckPathValid(const std::string &path, PATH_TYPE pathType, FILE_TYPE fileType = FILE_TYPE::READ,
-                    size_t threshold = MAX_MEM_BYTE_SIZE);
 bool CheckWriteFilePathValid(std::string &path);
 bool GetCurrentPath(std::string &currentPath);
 std::string GetSoFromEnvVar(const std::string &soName);
 bool CheckInputFileValid(const std::string &path, const std::string &fileType,
-    size_t threshold = INPUT_FILE_MAX_SIZE, std::string paramName = "", bool checkSoftLink = false);
+    size_t threshold = MAX_MEM_BYTE_SIZE, std::string paramName = "");
 
-template<typename T>
-inline bool WriteFileByStream(const std::string &filePath, const T &data,
-                              std::fstream::openmode openMode1 = std::fstream::out,
-                              std::fstream::openmode openMode2 = std::fstream::trunc,
+inline bool WriteStringToFile(const std::string &filePath, const std::string &data,
+                              std::fstream::openmode openMode = std::fstream::out | std::fstream::trunc,
                               mode_t fileAuthority = SAVE_DATA_FILE_AUTHORITY)
 {
-    std::string realPath = filePath;
-    if (!CheckWriteFilePathValid(realPath)) {
-        return false;
-    }
-    std::ofstream targetFile(realPath, openMode1 | openMode2);
-    if (!targetFile.is_open()) {
-        return false;
-    }
-    targetFile << data;
-    targetFile.close();
-    return Chmod(realPath, fileAuthority);
+    return WriteBinary(filePath, data.data(), data.length(), openMode);
 }

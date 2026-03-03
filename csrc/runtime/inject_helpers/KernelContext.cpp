@@ -68,7 +68,7 @@ bool GetTilingKeyFromName(std::string kernelName, uint64_t &tilingKey)
     }
 
     std::vector<std::string> items;
-    Split(kernelName, std::back_inserter(items), "_");
+    SplitString(kernelName, '_', items);
     if (items.size() < 2UL) {
         return false;
     }

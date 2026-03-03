@@ -74,21 +74,12 @@ public:
     std::string tempReadFile_;
 };
 
-TEST_F(FileSystemTest, cover_checkInputFileValid_can_not_get_absolute_path)
-{
-    testing::internal::CaptureStdout();
-    bool result = CheckInputFileValid("/nonexistent/path", "file", 100, "paramName", false);
-    std::string capture = testing::internal::GetCapturedStdout();
-    EXPECT_FALSE(result);
-    EXPECT_TRUE(capture.find("can not get absolute path") != std::string::npos);
-}
-
 TEST_F(FileSystemTest, cover_checkInputFileValid_invalid_character)
 {
     testing::internal::CaptureStdout();
     std::string invalidPath = tempDir_ + "/invalid\"\rfile.txt";
     MOCKER(&Realpath).stubs().will(returnValue(invalidPath));
-    bool result = CheckInputFileValid(invalidPath, "file", 100, "paramName", false);
+    bool result = CheckInputFileValid(invalidPath, "file", 100, "paramName");
     std::string capture = testing::internal::GetCapturedStdout();
     EXPECT_FALSE(result);
     EXPECT_TRUE(capture.find("contains invalid character") != std::string::npos);
@@ -99,7 +90,7 @@ TEST_F(FileSystemTest, cover_checkInputFileValid_contains_softlink)
 {
     testing::internal::CaptureStdout();
     MOCKER(&Realpath).stubs().will(returnValue(tempSoftLink_));
-    bool result = CheckInputFileValid(tempSoftLink_, "so", 100, "paramName", true);
+    bool result = CheckInputFileValid(tempSoftLink_, "so", 100, "paramName");
     std::string capture = testing::internal::GetCapturedStdout();
     EXPECT_FALSE(result);
     EXPECT_TRUE(capture.find("contains softlink") != std::string::npos);
@@ -112,35 +103,17 @@ TEST_F(FileSystemTest, cover_checkInputFileValid_path_too_long)
     std::string longPath = tempDir_ + "/";
     longPath.append(1000, 'a'); // 超过限制长度
     MOCKER(&Realpath).stubs().will(returnValue(longPath));
-    bool result = CheckInputFileValid(longPath, "file", 100, "paramName", false);
+    bool result = CheckInputFileValid(longPath, "file", 100, "paramName");
     std::string capture = testing::internal::GetCapturedStdout();
     EXPECT_FALSE(result);
     EXPECT_TRUE(capture.find("path length is too long") != std::string::npos);
     GlobalMockObject::verify();
 }
 
-TEST_F(FileSystemTest, cover_checkInputFileValid_xxxx)
-{
-    testing::internal::CaptureStdout();
-    bool result = CheckInputFileValid(tempDir_ + "/nonexistent_file.txt", "file", 100, "paramName", false);
-    std::string capture = testing::internal::GetCapturedStdout();
-    EXPECT_FALSE(result);
-    EXPECT_TRUE(capture.find("can not get absolute path") != std::string::npos);
-}
-
-TEST_F(FileSystemTest, cover_checkInputFileValid_path_nonexistent)
-{
-    testing::internal::CaptureStdout();
-    bool result = CheckInputFileValid(tempDir_ + "/nonexistent_file.txt", "file", 100, "paramName", false);
-    std::string capture = testing::internal::GetCapturedStdout();
-    EXPECT_FALSE(result);
-    EXPECT_TRUE(capture.find("can not get absolute path") != std::string::npos);
-}
-
 TEST_F(FileSystemTest, cover_checkInputFileValid_not_file)
 {
     testing::internal::CaptureStdout();
-    bool result = CheckInputFileValid(tempDir_, "file", 100, "paramName", false);
+    bool result = CheckInputFileValid(tempDir_, "file", 100, "paramName");
     std::string capture = testing::internal::GetCapturedStdout();
     EXPECT_FALSE(result);
     EXPECT_TRUE(capture.find("is not a file") != std::string::npos);
@@ -149,7 +122,7 @@ TEST_F(FileSystemTest, cover_checkInputFileValid_not_file)
 TEST_F(FileSystemTest, cover_checkInputFileValid_not_in_check_map)
 {
     testing::internal::CaptureStdout();
-    bool result = CheckInputFileValid(tempFile_, "invalid_type", 100, "paramName", false);
+    bool result = CheckInputFileValid(tempFile_, "invalid_type", 100, "paramName");
     std::string capture = testing::internal::GetCapturedStdout();
     EXPECT_FALSE(result);
     EXPECT_TRUE(capture.find("not in check map") != std::string::npos);
@@ -159,7 +132,7 @@ TEST_F(FileSystemTest, cover_checkInputFileValid_not_readable)
 {
     testing::internal::CaptureStdout();
     chmod(tempDir_.c_str(), 0300); // 设置无权限
-    bool result = CheckInputFileValid(tempDir_, "dir", 100, "paramName", false);
+    bool result = CheckInputFileValid(tempDir_, "dir", 100, "paramName");
     std::string capture = testing::internal::GetCapturedStdout();
     EXPECT_TRUE(capture.find("is not readable") != std::string::npos);
     EXPECT_FALSE(result);
@@ -169,7 +142,7 @@ TEST_F(FileSystemTest, cover_checkInputFileValid_not_readable)
 TEST_F(FileSystemTest, cover_checkInputFileValid_fileSize_too_large)
 {
     testing::internal::CaptureStdout();
-    bool result = CheckInputFileValid(tempFile_, "so", 10, "paramName", false);
+    bool result = CheckInputFileValid(tempFile_, "so", 10, "paramName");
     std::string capture = testing::internal::GetCapturedStdout();
     EXPECT_FALSE(result);
     EXPECT_TRUE(capture.find("file size is too large") != std::string::npos);
@@ -205,7 +178,7 @@ TEST_F(FileSystemTest, cover_readfile_size_not_correct)
 {
     testing::internal::CaptureStdout();
     uint8_t buffer[10] = {0};
-    bool result = ReadFile(tempReadFile_, buffer, 10);
+    bool result = ReadFile(tempReadFile_, buffer, 10, true);
     std::string capture = testing::internal::GetCapturedStdout();
     EXPECT_FALSE(result);
     EXPECT_TRUE(capture.find("is not correct") != std::string::npos);
@@ -314,7 +287,7 @@ TEST_F(FileSystemTest, ReadFile_expect_failed)
     ASSERT_FALSE(ReadFile(path, nullptr, 0));
     ASSERT_TRUE(MkdirRecusively(path));
     std::string filePath = "./tmp/1.txt";
-    WriteFileByStream(filePath, filePath);
+    WriteStringToFile(filePath, filePath);
     ASSERT_FALSE(ReadFile(path, &a, 1000));
 }
 
@@ -362,7 +335,7 @@ TEST_F(FileSystemTest, input_invalid_char_path_then_check_path_expect_error)
     ASSERT_TRUE(writer.is_open());
     writer.close();
     testing::internal::CaptureStdout();
-    ASSERT_FALSE(CheckPathValid(path, PATH_TYPE::FILE));
+    ASSERT_FALSE(CheckInputFileValid(path, "bin"));
     std::string capture = testing::internal::GetCapturedStdout();
     ASSERT_NE(capture.find("ERROR"), std::string::npos);
     ASSERT_NE(capture.find("contains"), std::string::npos);
@@ -377,10 +350,10 @@ TEST_F(FileSystemTest, mock_softlink_path_then_check_path_valid_expect_error)
     writer.close();
     MOCKER(IsSoftLinkRecursively).stubs().will(returnValue(true));
     testing::internal::CaptureStdout();
-    ASSERT_FALSE(CheckPathValid(path, PATH_TYPE::FILE));
+    ASSERT_FALSE(CheckInputFileValid(path, "bin"));
     std::string capture = testing::internal::GetCapturedStdout();
     ASSERT_NE(capture.find("ERROR"), std::string::npos);
-    ASSERT_NE(capture.find("contains soft link"), std::string::npos);
+    ASSERT_NE(capture.find("contains softlink"), std::string::npos);
 }
 
 TEST_F(FileSystemTest, mock_long_path_then_check_path_valid_expect_too_long_error)
@@ -391,7 +364,7 @@ TEST_F(FileSystemTest, mock_long_path_then_check_path_valid_expect_too_long_erro
     writer.close();
     MOCKER(PathLenCheckValid).stubs().will(returnValue(false));
     testing::internal::CaptureStdout();
-    ASSERT_FALSE(CheckPathValid(path, PATH_TYPE::FILE));
+    ASSERT_FALSE(CheckInputFileValid(path, "bin"));
     std::string capture = testing::internal::GetCapturedStdout();
     ASSERT_NE(capture.find("ERROR"), std::string::npos);
     ASSERT_NE(capture.find("length is too long"), std::string::npos);
@@ -404,7 +377,7 @@ TEST_F(FileSystemTest, mock_file_path_then_check_path_valid_expect_expect_dir_er
     ASSERT_TRUE(writer.is_open());
     writer.close();
     testing::internal::CaptureStdout();
-    ASSERT_FALSE(CheckPathValid(path, PATH_TYPE::DIR));
+    ASSERT_FALSE(CheckInputFileValid(path, "dir"));
     std::string capture = testing::internal::GetCapturedStdout();
     ASSERT_NE(capture.find("not a dir"), std::string::npos);
     ASSERT_NE(capture.find("ERROR"), std::string::npos);
@@ -418,7 +391,7 @@ TEST_F(FileSystemTest, mock_file_path_then_check_path_valid_expect_permission_in
     writer.close();
     MOCKER(CheckOwnerPermission).stubs().will(returnValue(false));
     testing::internal::CaptureStdout();
-    ASSERT_FALSE(CheckPathValid(path, PATH_TYPE::FILE));
+    ASSERT_FALSE(CheckInputFileValid(path, "bin"));
     std::string capture = testing::internal::GetCapturedStdout();
     ASSERT_NE(capture.find("ERROR"), std::string::npos);
 }
@@ -431,25 +404,10 @@ TEST_F(FileSystemTest, fake_file_then_check_path_invalid_expect_not_readable)
     writer.close();
     testing::internal::CaptureStdout();
     ASSERT_TRUE(Chmod(path, 0200));
-    ASSERT_FALSE(CheckPathValid(path, PATH_TYPE::FILE, FILE_TYPE::READ));
+    ASSERT_FALSE(CheckInputFileValid(path, "bin"));
     std::string capture = testing::internal::GetCapturedStdout();
     ASSERT_NE(capture.find("ERROR"), std::string::npos);
     ASSERT_NE(capture.find("not readable"), std::string::npos);
-}
-
-TEST_F(FileSystemTest, fake_file_then_check_path_invalid_expect_not_writable)
-{
-    std::string path = path_;
-    std::ofstream writer(path, std::ios::out | std::ios::binary);
-    ASSERT_TRUE(writer.is_open());
-    writer.close();
-    testing::internal::CaptureStdout();
-    ASSERT_TRUE(Chmod(path, 0400));
-    ASSERT_FALSE(CheckPathValid(path, PATH_TYPE::FILE, FILE_TYPE::WRITE));
-    std::string capture = testing::internal::GetCapturedStdout();
-    ASSERT_NE(capture.find("ERROR"), std::string::npos);
-    ASSERT_NE(capture.find("not writable"), std::string::npos);
-    ASSERT_TRUE(Chmod(path, 0600));
 }
 
 TEST_F(FileSystemTest, fake_file_then_check_path_invalid_expect_not_exec)
@@ -460,7 +418,7 @@ TEST_F(FileSystemTest, fake_file_then_check_path_invalid_expect_not_exec)
     writer.close();
     testing::internal::CaptureStdout();
     ASSERT_TRUE(Chmod(path, 0600));
-    ASSERT_FALSE(CheckPathValid(path, PATH_TYPE::FILE, FILE_TYPE::EXECUTE));
+    ASSERT_FALSE(CheckInputFileValid(path, "exe"));
     std::string capture = testing::internal::GetCapturedStdout();
     ASSERT_NE(capture.find("ERROR"), std::string::npos);
     ASSERT_NE(capture.find("not executable"), std::string::npos);

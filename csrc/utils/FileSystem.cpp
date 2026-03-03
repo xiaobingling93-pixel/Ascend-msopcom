@@ -21,6 +21,7 @@
 #include <iterator>
 #include "utils/InjectLogger.h"
 #include "utils/Path.h"
+#include "Ustring.h"
 
 using namespace std;
 
@@ -29,9 +30,11 @@ std::map<std::string, std::pair<uint32_t, bool>> GetFilePermission()
 {
     // [key,value] = [fileType, {neededPermission, trueIfCheckOwnerPermission}]
      std::map<std::string, std::pair<uint32_t, bool>> filePermission = {
-         {"dir", {S_IRUSR, true}},
-         {"so", {S_IRUSR, false}},
-    };
+         {"json", {S_IRUSR, true}}, {"cpp", {S_IRUSR, false}},
+         {"bin", {S_IRUSR, true}}, {"kernel", {S_IRUSR, true}},
+         {"dump", {S_IRUSR, true}}, {"dir", {S_IRUSR, true}},
+         {"so", {S_IRUSR, false}}, {"exe", {S_IEXEC | S_IRUSR, true}}
+     };
     return filePermission;
 }
 
@@ -71,22 +74,13 @@ inline bool IsRootUser()
 
 size_t ReadBinary(std::string const &filename, vector<char> &data)
 {
-    if (!CheckPathValid(filename, PATH_TYPE::FILE)) {
+    size_t fileSize = GetFileSize(filename);
+    data.resize(fileSize);
+    uint8_t *buffer = reinterpret_cast<uint8_t *>(data.data());
+    if (!ReadFile(filename, buffer, fileSize)) {
         return 0;
     }
-    std::ifstream ifs(filename, std::ios::binary);
-    if (!ifs.is_open()) {
-        return 0;
-    }
-    ifs.seekg(0, std::ifstream::end);
-    int64_t length = ifs.tellg();
-    if (length < 0) {
-        return 0;
-    }
-    ifs.seekg(0, std::ifstream::beg);
-    data.resize(length);
-    ifs.read(data.data(), length);
-    return length;
+    return fileSize;
 }
 
 bool MkdirRecusively(std::string const &path, mode_t mode)
@@ -95,7 +89,7 @@ bool MkdirRecusively(std::string const &path, mode_t mode)
     if (path.empty()) {
         return false;
     }
-    Split(Path(path).PathCanonicalize().ToString(), std::back_inserter(dirs), PATH_SEP);
+    SplitString(Path(path).PathCanonicalize().ToString(), *PATH_SEP, dirs);
     if (dirs.empty()) {
         ERROR_LOG("Mkdir [%s] failed because path is empty.", path.c_str());
         return false;
@@ -221,9 +215,9 @@ size_t GetFileSize(const std::string &filePath)
     return filesize;
 }
 
-bool ReadFile(const std::string &filePath, uint8_t *buffer, size_t bufferSize)
+bool ReadFile(const std::string &filePath, uint8_t *buffer, size_t bufferSize, bool checkSize)
 {
-    if (!CheckPathValid(filePath, PATH_TYPE::FILE)) {
+    if (!CheckInputFileValid(filePath, "bin")) {
         ERROR_LOG("Check file: %s failed", filePath.c_str());
         return false;
     }
@@ -232,32 +226,34 @@ bool ReadFile(const std::string &filePath, uint8_t *buffer, size_t bufferSize)
         return false;
     }
     size_t fileSize = GetFileSize(filePath);
-    if (fileSize != bufferSize) {
+    if (checkSize && fileSize != bufferSize) {
         ERROR_LOG("The size of file %s is not correct", filePath.c_str());
         return false;
     }
+    size_t readSize = min(fileSize, bufferSize);
     std::ifstream file(filePath, std::ios::binary);
     if (file.fail()) {
         ERROR_LOG("Can not open file [%s] for reading", filePath.c_str());
         return false;
     }
-    file.read(reinterpret_cast<char *>(buffer), static_cast<long>(bufferSize));
+    file.read(reinterpret_cast<char *>(buffer), readSize);
     file.close();
     return true;
 }
 
-size_t WriteBinary(const std::string &filename, const char *data, uint64_t length, std::ios_base::openmode extrMode)
+size_t WriteBinary(const std::string &filename, const char *data, uint64_t length, std::ios_base::openmode mode)
 {
     std::string realPath = filename;
     if (!CheckWriteFilePathValid(realPath)) {
         return 0;
     }
-    std::ofstream ofs(realPath, std::ios::out | std::ios::binary | extrMode);
+    std::ofstream ofs(realPath, mode);
     if (!ofs.is_open()) {
         ERROR_LOG("can not open file: %s", realPath.c_str());
         return 0;
     }
     if (!Chmod(realPath, SAVE_DATA_FILE_AUTHORITY)) {
+        WARN_LOG("chmod open file %s to %#o failed", realPath.c_str(), SAVE_DATA_FILE_AUTHORITY);
         return 0;
     }
     ofs.write(data, static_cast<std::streamsize>(length));
@@ -283,7 +279,7 @@ bool IsSoftLinkRecursively(const std::string &path)
         nonConstPath.pop_back();
     }
     std::vector<std::string> dirs;
-    Split(nonConstPath, std::back_inserter(dirs), PATH_SEP);
+    SplitString(nonConstPath, *PATH_SEP, dirs);
     if (dirs.empty()) {
         return false;
     }
@@ -310,7 +306,7 @@ bool PathLenCheckValid(const std::string &checkPath)
         return false;
     }
     std::vector<std::string> dirs;
-    Split(checkPath, std::back_inserter(dirs), PATH_SEP);
+    SplitString(checkPath, *PATH_SEP, dirs);
     for (const auto &it : dirs) {
         if (it.length() > FILE_NAME_LENGTH_LIMIT) {
             return false;
@@ -348,52 +344,6 @@ bool CheckFileSizeValid(const std::string &path, size_t threshold)
     }
     auto fileSize = GetFileSize(path);
     return fileSize == 0 || fileSize <= threshold;
-}
-
-bool CheckPathValid(const std::string &path, PATH_TYPE pathType, FILE_TYPE fileType, size_t threshold)
-{
-    const std::map<FILE_TYPE, uint32_t> FileTypePermission = {
-        {FILE_TYPE::READ, S_IRUSR}, {FILE_TYPE::WRITE, S_IWUSR}, {FILE_TYPE::EXECUTE, S_IXUSR}
-    };
-
-    std::string absPath = Realpath(path);
-    std::string errorMsg;
-    if (!IsStringCharValid(absPath, errorMsg)) {
-        ERROR_LOG("Input path=%s contains %s, which is invalid", absPath.c_str(), errorMsg.c_str());
-        return false;
-    }
-    if (IsSoftLinkRecursively(absPath)) {
-        ERROR_LOG("Input path=%s contains soft link, may cause security problems", absPath.c_str());
-        return false;
-    }
-    if (!PathLenCheckValid(absPath)) {
-        ERROR_LOG("Input path=%s length is too long.", absPath.c_str());
-        return false;
-    }
-    if ((fileType == FILE_TYPE::READ || fileType == FILE_TYPE::EXECUTE) && !IsExist(absPath)) {
-        ERROR_LOG("Input path=%s does not exist", absPath.c_str());
-        return false;
-    }
-
-    if ((pathType == PATH_TYPE::DIR) && !IsDir(absPath)) {
-        ERROR_LOG("Input path=%s is not a dir", absPath.c_str());
-        return false;
-    }
-    uint32_t fileMode = FileTypePermission.at(fileType);
-    if (!CheckPathPermission(absPath, fileMode)) {
-        return false;
-    }
-
-    if (!CheckOwnerPermission(absPath, errorMsg)) {
-        ERROR_LOG("%s", errorMsg.c_str());
-        return false;
-    }
-
-    if ((pathType == PATH_TYPE::FILE) && (fileType == FILE_TYPE::READ) && !CheckFileSizeValid(absPath, threshold)) {
-        ERROR_LOG("Input file=%s size is too large, max file size: %zu", absPath.c_str(), threshold);
-        return false;
-    }
-    return true;
 }
 
 bool GetCurrentPath(std::string &currentPath)
@@ -446,7 +396,7 @@ std::string GetSoFromEnvVar(const std::string &soName)
     }
     std::string pathFromEnv = ldEnv;
     std::vector<std::string> envs;
-    Split(pathFromEnv, std::back_inserter(envs), ":");
+    SplitString(pathFromEnv, ':', envs);
     for (const std::string &path : envs) {
         std::string soPath = JoinPath({path, soName});
         std::string realSoPath = Realpath(soPath);
@@ -459,13 +409,12 @@ std::string GetSoFromEnvVar(const std::string &soName)
 }
 
 
-bool CheckInputFileValid(const std::string &path, const std::string &fileType, size_t threshold, std::string paramName,
-    bool checkSoftLink)
+bool CheckInputFileValid(const std::string &path, const std::string &fileType, size_t threshold, std::string paramName)
 {
     if (!paramName.empty()) { paramName = " " + paramName; }
-    std::string absPath = Realpath(path);
+    std::string absPath = Path(path).PathCanonicalize().ToString();
     if (absPath.empty()) {
-        ERROR_LOG("Input path %s can not get absolute path", path.c_str());
+        ERROR_LOG("Input path %s can not get absolute path.", path.c_str());
         return false;
     }
     std::string errorMsg;
@@ -473,7 +422,7 @@ bool CheckInputFileValid(const std::string &path, const std::string &fileType, s
         ERROR_LOG("Input parameter %s path contains %s, which is invalid", paramName.c_str(), errorMsg.c_str());
         return false;
     }
-    if (checkSoftLink && IsSoftLinkRecursively(absPath)) {
+    if (IsSoftLinkRecursively(absPath)) {
         ERROR_LOG("Input parameter %s path contains softlink, may cause security problems", paramName.c_str());
         return false;
     }
@@ -485,9 +434,11 @@ bool CheckInputFileValid(const std::string &path, const std::string &fileType, s
         ERROR_LOG("Input parameter %s path does not exist", paramName.c_str());
         return false;
     }
-    bool isDir = (fileType == "dir");
-    if (!isDir && IsDir(absPath)) {
-        ERROR_LOG("Input parameter %s path: %s is not a file", paramName.c_str(), absPath.c_str());
+    bool expectDir = (fileType == "dir");
+    bool gotDir = IsDir(absPath);
+    if (expectDir != gotDir) {
+        const char *printType = expectDir ? "dir" : "file";
+        ERROR_LOG("Input parameter %s path: %s is not a %s", paramName.c_str(), absPath.c_str(),  printType);
         return false;
     }
     auto filePermission = GetFilePermission();
@@ -503,7 +454,7 @@ bool CheckInputFileValid(const std::string &path, const std::string &fileType, s
         ERROR_LOG("%s", errorMsg.c_str());
         return false;
     }
-    if (!isDir && (fileMode == S_IRUSR) && !CheckFileSizeValid(absPath, threshold)) {
+    if (!expectDir && (fileMode == S_IRUSR) && !CheckFileSizeValid(absPath, threshold)) {
         ERROR_LOG("Input parameter %s file size is too large, max file size: %zu", paramName.c_str(), threshold);
         return false;
     }

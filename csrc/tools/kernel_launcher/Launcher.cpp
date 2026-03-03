@@ -62,7 +62,7 @@ void Launcher::GenJson(const KernelConfig& kernelConfig)
         }
     }
     std::string content = jsonData.dump();
-    if (!WriteFileByStream(jsonFilePath, content.data())) {
+    if (!WriteStringToFile(jsonFilePath, content)) {
         WARN_LOG("Kernel context save failed, json write failed");
         return;
     } else {
@@ -144,7 +144,7 @@ bool Launcher::InitInput(const Param &in)
     void *hostInputPtr;
     ACL_CHECK_MESSAGE_AND_RETURN(aclrtMallocHost(&hostInputPtr, dataSize), "aclrtMallocHost");
     hostInputPtrs_.emplace_back(hostInputPtr);
-    if (!ReadFile(in.dataPath, (uint8_t *) hostInputPtr, dataSize)) {
+    if (!ReadFile(in.dataPath, (uint8_t *) hostInputPtr, dataSize, true)) {
         return false;
     }
     void *deviceInputPtr;
@@ -187,7 +187,7 @@ bool Launcher::InitTiling(const Param &tiling)
     void *hostInputPtr;
     ACL_CHECK_MESSAGE_AND_RETURN(aclrtMallocHost(&hostInputPtr, dataSize), "aclrtMallocHost");
     hostInputPtrs_.emplace_back(hostInputPtr);
-    if (!ReadFile(tiling.dataPath, (uint8_t *) hostInputPtr, dataSize)) {
+    if (!ReadFile(tiling.dataPath, (uint8_t *) hostInputPtr, dataSize, true)) {
         return false;
     }
     void *deviceInputPtr;

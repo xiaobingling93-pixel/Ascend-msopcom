@@ -45,7 +45,7 @@ bool ReadMagicFromKernelJson(std::string const &jsonPath, std::string &magicStr)
         WARN_LOG("Kernel JSON path not exist. path:%s", ToSafeString(jsonPath).c_str());
         return false;
     }
-    if (!CheckPathValid(resolved, PATH_TYPE::FILE, FILE_TYPE::READ)) {
+    if (!CheckInputFileValid(resolved, "json")) {
         WARN_LOG("Kernel JSON path is invalid. path:%s", ToSafeString(resolved).c_str());
         return false;
     }
