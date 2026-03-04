@@ -67,7 +67,7 @@ bool HijackedFuncOfAclrtLaunchKernelWithConfigImpl::InitParam(
         skipSanitizer_ = false;
     };
     refreshParamFunc_();
-    launchCtx_ = LaunchManager::Local().CreateContext(funcHandle, blockDim, stream, argsHandle);
+    launchCtx_ = LaunchManager::Local().CreateContext(funcHandle, blockDim, stream, cfg, argsHandle);
     if (launchCtx_ == nullptr) {
         DEBUG_LOG("Create launch context failed.");
         return false;

@@ -42,9 +42,11 @@ public:
     // 每个device一个Instance
     static LaunchManager &Local();
 
-    LaunchContextSP CreateContext(aclrtFuncHandle funcHandle, uint32_t blockDim, aclrtStream stream, aclrtArgsHandle argsHandle);
+    LaunchContextSP CreateContext(aclrtFuncHandle funcHandle, uint32_t blockDim, aclrtStream stream,
+                                   aclrtLaunchKernelCfg *cfg, aclrtArgsHandle argsHandle);
 
-    LaunchContextSP CreateContext(aclrtFuncHandle funcHandle, uint32_t blockDim, aclrtStream stream, ArgsContextSP argsContext);
+    LaunchContextSP CreateContext(aclrtFuncHandle funcHandle, uint32_t blockDim, aclrtStream stream,
+                                   aclrtLaunchKernelCfg *cfg, ArgsContextSP argsContext);
 
     LaunchContextSP GetContext(uint64_t launchId) const;
 
@@ -59,6 +61,10 @@ public:
 
     void ArchiveMemInfo() { memInfoHistory_.push_back(memInfo_); }
 
+    void SetSimtUbDynamicSize(uint32_t simtUbDynamicSize) { simtUbDynamicSize_ = simtUbDynamicSize; }
+
+    uint32_t GetSimtUbDynamicSize() const { return simtUbDynamicSize_; }
+
 #if defined (__BUILD_TESTS__)
     void Clear()
     {
@@ -66,6 +72,7 @@ public:
         streamInfos_.clear();
         memInfo_.Clear();
         memInfoHistory_.clear();
+        simtUbDynamicSize_ = 0;
     }
 #endif
 private:
@@ -75,5 +82,6 @@ private:
     // 这里的信息有部分依赖kernelName去解析meta段以及需要每张卡一个，所以放这里合适
     OpMemInfo memInfo_;
     std::vector<OpMemInfo> memInfoHistory_;
+    uint32_t simtUbDynamicSize_{};
 };
 

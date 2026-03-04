@@ -67,7 +67,7 @@ bool HijackedFuncOfAclrtLaunchKernelImpl::InitParam(aclrtFuncHandle funcHandle, 
     };
     refreshParamFunc_();
     argsCtx_ = ArgsManager::Instance().CreateContext(const_cast<void *>(argsData), argsSize, true);
-    launchCtx_ = LaunchManager::Local().CreateContext(funcHandle, blockDim, stream, argsCtx_);
+    launchCtx_ = LaunchManager::Local().CreateContext(funcHandle, blockDim, stream, nullptr, argsCtx_);
     if (launchCtx_ == nullptr) {
         DEBUG_LOG("Create launch context failed");
         return false;

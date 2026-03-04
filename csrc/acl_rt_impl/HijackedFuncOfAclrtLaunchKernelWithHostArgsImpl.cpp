@@ -80,7 +80,7 @@ bool HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl::InitParam(
         return false;
     }
     argsCtx_ = ArgsManager::Instance().CreateContext(hostArgs, argsSize, placeHolderArray_);
-    launchCtx_ = LaunchManager::Local().CreateContext(funcHandle, blockDim, stream, argsCtx_);
+    launchCtx_ = LaunchManager::Local().CreateContext(funcHandle, blockDim, stream, cfg, argsCtx_);
     if (launchCtx_ == nullptr) {
         DEBUG_LOG("Create launch context failed");
         return false;

@@ -20,6 +20,7 @@
 #include "ArgsManager.h"
 #include "FuncManager.h"
 #include "DeviceContext.h"
+#include "core/FuncSelector.h"
 
 using namespace std;
 
@@ -35,10 +36,11 @@ LaunchManager &LaunchManager::Local()
     return insts[deviceId];
 }
 
-LaunchContextSP LaunchManager::CreateContext(aclrtFuncHandle funcHandle, uint32_t blockDim, aclrtStream stream, aclrtArgsHandle argsHandle)
+LaunchContextSP LaunchManager::CreateContext(aclrtFuncHandle funcHandle, uint32_t blockDim, aclrtStream stream,
+                                               aclrtLaunchKernelCfg *cfg, aclrtArgsHandle argsHandle)
 {
     const auto &streamInfo = GetOrCreateStreamInfo(stream);
-    LaunchParam param{blockDim, stream, streamInfo.binded, contexts_.size()};
+    LaunchParam param{blockDim, stream, streamInfo.binded, contexts_.size(), cfg};
     auto argsCtx = ArgsManager::Instance().GetContext(argsHandle);
     auto funcCtx = FuncManager::Instance().GetContext(funcHandle);
     if (!argsCtx || !funcCtx) {
@@ -46,20 +48,40 @@ LaunchContextSP LaunchManager::CreateContext(aclrtFuncHandle funcHandle, uint32_
     }
     auto ctx = make_shared<LaunchContext>(funcCtx, argsCtx, param);
     contexts_.emplace_back(std::move(ctx));
+    
+    // Handle sanitizer configuration
+    if (IsSanitizer()){
+        if (cfg != nullptr && cfg->attrs != nullptr){
+            SetSimtUbDynamicSize(cfg->attrs->value.localMemorySize);
+        } else {
+            SetSimtUbDynamicSize(0);
+        }
+    }
+    
     return contexts_.back();
 }
 
 LaunchContextSP LaunchManager::CreateContext(aclrtFuncHandle funcHandle, uint32_t blockDim, aclrtStream stream,
-                                             ArgsContextSP argsContext)
+                                               aclrtLaunchKernelCfg *cfg, ArgsContextSP argsContext)
 {
     const auto &streamInfo = GetOrCreateStreamInfo(stream);
-    LaunchParam param{blockDim, stream, streamInfo.binded, contexts_.size()};
+    LaunchParam param{blockDim, stream, streamInfo.binded, contexts_.size(), cfg};
     auto funcCtx = FuncManager::Instance().GetContext(funcHandle);
     if (!argsContext || !funcCtx) {
         return nullptr;
     }
     auto ctx = make_shared<LaunchContext>(funcCtx, argsContext, param);
     contexts_.emplace_back(std::move(ctx));
+    
+    // Handle sanitizer configuration
+    if (IsSanitizer()){
+        if (cfg != nullptr && cfg->attrs != nullptr){
+            SetSimtUbDynamicSize(cfg->attrs->value.localMemorySize);
+        } else {
+            SetSimtUbDynamicSize(0);
+        }
+    }
+    
     return contexts_.back();
 }
 

@@ -30,7 +30,7 @@ class LaunchManagerTest : public ContextMockHelper {
 TEST_F(LaunchManagerTest, mock_valid_input_then_create_aclrt_launch_context_expect_get_success)
 {
     aclrtStream stream = &placeholder_;
-    auto expect = LaunchManager::Local().CreateContext(funcHandle_, 1, stream, argsHandle_);
+    auto expect = LaunchManager::Local().CreateContext(funcHandle_, 1, stream, nullptr, argsHandle_);
     ASSERT_NE(expect, nullptr);
 
     auto ctx = LaunchManager::Local().GetLastContext();

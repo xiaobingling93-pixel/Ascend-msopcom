@@ -46,6 +46,8 @@ std::mutex g_instrMutex;
 
 Register g_registers[C220_A2_A3_MAXCORE_NUM] = {}; // 保存寄存器状态，向下一个算子传递
 
+inline bool InAclNewLaunchCallStack();
+
 inline bool CheckRegIdxValid(int64_t regIdx)
 {
     return (regIdx >= 0) && (regIdx <= C220_A2_A3_MAXCORE_NUM - 1);
@@ -168,7 +170,12 @@ inline bool InitGlobalHead(RecordGlobalHead &head, uint64_t blockDim, KernelType
     if (head.supportSimt) {
         // ====|=====|=============
         // SIMD、SIMT、ShadowMemory
-        uint32_t ubDynamicSize = KernelContext::Instance().GetSimtUbDynamicSize();
+        uint32_t ubDynamicSize{};
+        if (InAclNewLaunchCallStack()){
+            ubDynamicSize = LaunchManager::Local().GetSimtUbDynamicSize();
+        } else {
+            ubDynamicSize = KernelContext::Instance().GetSimtUbDynamicSize();
+        }
         DEBUG_LOG("simtInfo.ubDynamicSize:%u", ubDynamicSize);
         constexpr uint32_t ubDynamicAlignSize = 128;
         head.simtInfo.ubDynamicSize = CeilByAlignSize<ubDynamicAlignSize>(ubDynamicSize);

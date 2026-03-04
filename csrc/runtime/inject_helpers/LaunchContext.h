@@ -33,6 +33,7 @@ struct LaunchParam {
     aclrtStream stream;
     bool isSink;
     uint64_t launchId;
+    aclrtLaunchKernelCfg *cfg;
 };
 
 class LaunchContext {
