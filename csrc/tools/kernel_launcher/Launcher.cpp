@@ -140,7 +140,6 @@ bool Launcher::InitInput(const Param &in)
         return true;
     }
     size_t dataSize = in.dataSize;
-    auto memorySize = static_cast<size_t>(ceil(static_cast<double>(dataSize) / 32) * 32 + 32);
     void *hostInputPtr;
     ACL_CHECK_MESSAGE_AND_RETURN(aclrtMallocHost(&hostInputPtr, dataSize), "aclrtMallocHost");
     hostInputPtrs_.emplace_back(hostInputPtr);
@@ -148,7 +147,7 @@ bool Launcher::InitInput(const Param &in)
         return false;
     }
     void *deviceInputPtr;
-    ACL_CHECK_MESSAGE_AND_RETURN(aclrtMalloc(&deviceInputPtr, memorySize, ACL_MEM_MALLOC_HUGE_FIRST),
+    ACL_CHECK_MESSAGE_AND_RETURN(aclrtMalloc(&deviceInputPtr, dataSize, ACL_MEM_MALLOC_HUGE_FIRST),
                                  "aclrtMalloc");
     devInputPtrs_.emplace_back(deviceInputPtr);
     ACL_CHECK_MESSAGE_AND_RETURN(aclrtMemcpy(deviceInputPtr, dataSize, hostInputPtr, dataSize,

@@ -603,32 +603,11 @@ aclError aclrtMallocImpl(void **devPtr, size_t size, aclrtMemMallocPolicy policy
     return instance.Call(devPtr, size, policy);
 }
 
-aclError aclrtMallocHostImpl(void **hostPtr, size_t size)
-{
-    LayerGuard guard(HijackedLayerManager::Instance(), __func__);
-    HijackedFuncOfAclrtMallocHostImpl instance;
-    return instance.Call(hostPtr, size);
-}
-
-aclError aclrtMallocHostWithCfgImpl(void **hostPtr, size_t size, aclrtMallocConfig *cfg)
-{
-    LayerGuard guard(HijackedLayerManager::Instance(), __func__);
-    HijackedFuncOfAclrtMallocHostWithCfgImpl instance;
-    return instance.Call(hostPtr, size, cfg);
-}
-
 aclError aclrtFreeImpl(void *devPtr)
 {
     LayerGuard guard(HijackedLayerManager::Instance(), __func__);
     HijackedFuncOfAclrtFreeImpl instance;
     return instance.Call(devPtr);
-}
-
-aclError aclrtFreeHostImpl(void *hostPtr)
-{
-    LayerGuard guard(HijackedLayerManager::Instance(), __func__);
-    HijackedFuncOfAclrtFreeHostImpl instance;
-    return instance.Call(hostPtr);
 }
 
 aclError aclrtMemsetImpl(void *devPtr, size_t maxCount, int32_t value, size_t count)

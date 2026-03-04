@@ -24,6 +24,7 @@ extern "C" {
 #endif  // __cplusplus
 
 #define PROF_REAL 1
+#define DV_MEM_RESV 8
 #define CHANNEL_AICORE (43)
 #define CHANNEL_HWTS_LOG (45)    /* add for ts0 as hwts channel */
 #define CHANNEL_TSFW_L2 (47)
@@ -31,6 +32,8 @@ extern "C" {
 #define CHANNEL_FFTS_PROFILE_BUFFER_TASK (53)   /* add for ascend910B */
 #define CHANNEL_AICPU (143)
 #define CHANNEL_HCCS (9)
+
+typedef void* DVdeviceptr;
 
 enum class InstrChannel : uint32_t {
     GROUP0_AIC = 11,
@@ -130,6 +133,25 @@ typedef enum {
     INFO_TYPE_HOST_KERN_LOG,
 } DEV_INFO_TYPE;
 
+typedef enum tagMemType {
+    DV_MEM_SVM = 0x0001,            /**< DV_MEM_SVM_DEVICE : svm memory & mapped device */
+    DV_MEM_SVM_HOST = 0x0002,       /**< DV_MEM_SVM_HOST : svm memory & mapped host */
+    DV_MEM_SVM_DEVICE = 0x0004,     /**< DV_MEM_SVM : svm memory & no mapped */
+    DV_MEM_LOCK_HOST = 0x0008,      /**< DV_MEM_LOCK_HOST :    host mapped memory & lock host */
+    DV_MEM_LOCK_DEV = 0x0010,       /**< DV_MEM_LOCK_DEV : dev mapped memory & lock dev */
+    DV_MEM_LOCK_DEV_DVPP = 0x0020,  /**< DV_MEM_LOCK_DEV_DVPP : dev_dvpp mapped memory & lock dev */
+} DV_MEM_TYPE;
+
+struct DVattribute {
+    uint32_t memType;
+    uint32_t resv1;
+    uint32_t resv2;
+
+    uint32_t devId;
+    uint32_t pageSize;
+    uint32_t resv[DV_MEM_RESV];
+};
+
 int prof_drv_start_origin(unsigned int device_id, unsigned int channel_id, struct prof_start_para *start_para);
 
 int prof_channel_read_origin(unsigned int device_id, unsigned int channel_id, char *out_buf, unsigned int buf_size);
@@ -142,6 +164,8 @@ drvError_t halGetDeviceInfoByBuffOrigin(
     uint32_t deviceId, int32_t aicoreType, int32_t frequeType, void* freq, int32_t* size);
 
 drvError_t halGetDeviceInfoOrigin(uint32_t deviceId, int32_t aicoreType, int32_t frequeType, int64_t* freq);
+
+drvError_t drvMemGetAttributeOrigin(DVdeviceptr vptr, struct DVattribute *attr);
 
 #ifdef __cplusplus
 }

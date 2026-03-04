@@ -173,3 +173,8 @@ void ReportOverflowMalloc(KernelContext::OpMemInfo const &opMemInfo);
  * @brief 上报 AscendC overflow 地址内存释放记录
  */
 void ReportOverflowFree(KernelContext::OpMemInfo &opMemInfo);
+
+/**
+ * @brief 通过驱动接口判断内存是否在 device 上
+ */
+bool IsMemoryOnDevice(void *ptr);

@@ -23,6 +23,7 @@
 #include "RuntimeConfig.h"
 #include "runtime/RuntimeOrigin.h"
 #include "runtime/inject_helpers/LocalDevice.h"
+#include "runtime/inject_helpers/MemoryDataCollect.h"
 
 HijackedFuncOfMemset::HijackedFuncOfMemset()
     : HijackedFuncType(RuntimeLibName(), "rtMemset") {}
@@ -30,6 +31,9 @@ HijackedFuncOfMemset::HijackedFuncOfMemset()
 void HijackedFuncOfMemset::Pre(void *devPtr, uint64_t destMax, uint32_t val, uint64_t cnt)
 {
     if (IsSanitizer()) {
+        if (!IsMemoryOnDevice(devPtr)) {
+            return;
+        }
         PacketHead head = { PacketType::MEMORY_RECORD };
         HostMemRecord record{};
         record.type = MemOpType::STORE;

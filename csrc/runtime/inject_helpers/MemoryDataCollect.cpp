@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "KernelContext.h"
+#include "ascend_hal/AscendHalOrigin.h"
 #include "utils/InjectLogger.h"
 #include "runtime.h"
 #include "runtime/inject_helpers/KernelContext.h"
@@ -484,4 +485,16 @@ void ReportOverflowFree(KernelContext::OpMemInfo &opMemInfo)
         return;
     }
     ReportFree(opMemInfo.overflowAddr, MemInfoSrc::BYPASS, MemInfoDesc::OVERFLOW_ADDR);
+}
+
+bool IsMemoryOnDevice(void *ptr)
+{
+    struct DVattribute attr = {0};
+    if (drvMemGetAttributeOrigin(ptr, &attr) != DRV_ERROR_NONE) {
+        /// 使用非法地址时会导致获取地址空间失败，此时我们无法区分此地址为 host 侧或 device 侧
+        /// 地址，为防止漏检始终对此类地址进行检测
+        return true;
+    }
+
+    return attr.memType == DV_MEM_LOCK_DEV || attr.memType == DV_MEM_LOCK_DEV_DVPP;
 }

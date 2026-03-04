@@ -20,6 +20,7 @@
 #include "acl_rt_impl/AscendclImplOrigin.h"
 #include "core/FuncSelector.h"
 #include "runtime/inject_helpers/LocalDevice.h"
+#include "runtime/inject_helpers/MemoryDataCollect.h"
 #include "utils/Protocol.h"
 #include "utils/Serialize.h"
 
@@ -29,6 +30,9 @@ HijackedFuncOfAclrtMemsetImpl::HijackedFuncOfAclrtMemsetImpl()
 void HijackedFuncOfAclrtMemsetImpl::Pre(void *devPtr, size_t maxCount, int32_t value, size_t count)
 {
     if (IsSanitizer()) {
+        if (!IsMemoryOnDevice(devPtr)) {
+            return;
+        }
         PacketHead head = { PacketType::MEMORY_RECORD };
         HostMemRecord record{};
         record.type = MemOpType::STORE;
