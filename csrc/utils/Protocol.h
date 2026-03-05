@@ -72,12 +72,45 @@ constexpr uint64_t SHADOW_MEM_MIN_BYTE_SIZE = 12 * 1024 * 1024;
 // 非法的地址信息
 constexpr uint64_t ILLEGAL_ADDR = 0xFFFFFFFFFFFFFFFFULL;
 
+namespace OnlineShadowMemory {
 // gm建模地址范围0 ~ 0xFFFF FFFF FFFF (48 bits)
 constexpr uint64_t ONLINE_GLOBAL_MEM_MASK = 0xFFFFFFFFFFFFULL;
 // 片上内存建模地址范围0 ~ 0xF FFFF FFFF (32 bits)
 constexpr uint64_t ONLINE_LOCAL_MEM_MASK = 0xFFFFFFFFULL;
 // 用于标记GM上定义的数据来源于host
 constexpr uint64_t ONLINE_ONE_SM_STAND_FOR_BYTE = 0xFFFFULL + 1; // 64KB
+
+enum MemoryByteStatus : uint8_t {
+    DEFAULT = 0,
+    READ,
+    GLOBAL_READ,
+    WRITE,
+    RACE,
+};
+
+enum class OnlineMemoryType : uint8_t {
+    GM = 0,
+    UB,
+};
+
+/*
+协议设计如下：
+    [63:32]: pc
+    [31:31]: sync threads state
+    [30:30]: memoryType 当前内存表示ub还是gm，默认为gm
+    [11:14]: memory status表示当前内存上的状态，分为DEFAULT/READ/GLOBAL_READ/WRITE/RACE ...
+    [10:0]: threadId
+*/
+constexpr uint64_t PC_START_BIT = 32;
+constexpr uint64_t PC_MASK = 0xFFFFU;
+constexpr uint64_t SYNC_STATE_START_BIT = 31;
+constexpr uint64_t SYNC_STATE_MASK = 0x1U;
+constexpr uint64_t MEMORY_TYPE_START_BIT = 30;
+constexpr uint64_t MEMORY_TYPE_MASK = 0x1U;
+constexpr uint64_t MEMORY_STATUS_START_BIT = 11;
+constexpr uint64_t MEMORY_STATUS_MASK = 0xFU;
+constexpr uint64_t THREAD_ID_MASK = 0x7FFU;
+} // namespace OnlineShadowMemory
 
 // 在线shadow memory的单字节状态
 enum class OnlineSmAddrStatus : uint64_t {
@@ -228,6 +261,7 @@ struct KernelInfo {
 
 /// 该结构体主要包含当前block包含的信息，保存在每个核的头部
 struct BlockInfo {
+    uint64_t simtSyncThreadCount{};                   // 当前核上simt单元多少个线程已经运行了sync_thread指令
     uint16_t blockId{};
     uint16_t threadXDim{};
     uint16_t threadYDim{};

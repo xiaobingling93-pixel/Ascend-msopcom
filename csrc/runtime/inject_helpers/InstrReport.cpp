@@ -44,6 +44,7 @@
 namespace {
 std::mutex g_instrMutex;
 
+using namespace OnlineShadowMemory;
 Register g_registers[C220_A2_A3_MAXCORE_NUM] = {}; // 保存寄存器状态，向下一个算子传递
 
 inline bool InAclNewLaunchCallStack();
@@ -324,9 +325,9 @@ void MergeSmRecord(std::vector<ShadowMemoryRecord> &records, uint64_t status, ui
     record.size = 1;
     record.space = AddressSpace::GM;
     record.opType = MemOpType::STORE;
-    uint16_t threadId = status & 0x3FF;
+    uint16_t threadId = status & THREAD_ID_MASK;
     DecomposeThreadId(threadId, head, record.threadLoc);
-    record.location.pc = (status >> 16) & 0xFFFFFFFFFFFF;
+    record.location.pc = (status >> PC_START_BIT) & PC_MASK;
     record.location.blockId = head.blockInfo.blockId;
     if (records.size() == 0) {
         records.emplace_back(record);
@@ -350,10 +351,15 @@ inline void ParseSmL2Table(uint64_t *l2TblPtr, size_t l0Idx, size_t l1Idx, Recor
     uint8_t l2OneBits = CountOneBits(ONLINE_ONE_SM_STAND_FOR_BYTE - 1);
     for (size_t l2Idx = 0; l2Idx < ONLINE_ONE_SM_STAND_FOR_BYTE; ++l2Idx) {
         uint64_t status = l2TblPtr[l2Idx];
-        uint8_t memStatus = (status >> 11) & 0x1;
-        if (memStatus == 0) { continue; }
-        uint64_t addr = (l0Idx << l1OneBits) | (l1Idx << l2OneBits) | l2Idx;
-        MergeSmRecord(records, status, addr, head);
+        MemoryByteStatus memStatus = static_cast<MemoryByteStatus>((status >> MEMORY_STATUS_START_BIT) &
+            MEMORY_STATUS_MASK);
+        OnlineMemoryType memType = static_cast<OnlineMemoryType>((status >> MEMORY_TYPE_START_BIT) &
+            MEMORY_TYPE_MASK);
+        if ((memStatus == MemoryByteStatus::WRITE || memStatus == MemoryByteStatus::RACE) &&
+            memType == OnlineMemoryType::GM) {
+            uint64_t addr = (l0Idx << l1OneBits) | (l1Idx << l2OneBits) | l2Idx;
+            MergeSmRecord(records, status, addr, head);
+        }
     }
 }
 
