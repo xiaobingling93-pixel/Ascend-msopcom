@@ -234,6 +234,31 @@ uint64_t GetMetaSection(const rtDevBinary_t &binary, const string &kernelName, v
     return shSize;
 }
 
+bool GetSimtSymbolFromBinary(const char *data, uint64_t length)
+{
+    if (data == nullptr) {
+        return false;
+    }
+    std::string binaryData(data, length);
+    std::string objdumpOutput;
+    if (!PipeCall({"llvm-objdump", "-t", "-"}, objdumpOutput, binaryData)) {
+        DEBUG_LOG("Call llvm-objdump failed");
+        return false;
+    }
+    vector<string> lines;
+    SplitString(objdumpOutput, '\n', lines);
+    for (string &line: lines) {
+        istringstream iss(line);
+        auto lineVec = vector<string>(istream_iterator<string>{iss}, istream_iterator<string>());
+        // Simt symbol dump info like this:
+        // 00000000000000d0 l   .text 0000000000000000 $t.1
+        if (lineVec.size() == 5 && lineVec.at(1) == "l" && lineVec.at(2) == ".text" && StartsWith(lineVec.at(4), "$t")) {
+            return true;
+        }
+    }
+    return false;
+}
+
 RegisterContext::~RegisterContext()
 {
     if (param_.needUnload) {
@@ -250,6 +275,7 @@ bool RegisterContext::Init(const vector<char> &elfData, aclrtBinHandle binHandle
         return false;
     }
     DEBUG_LOG("Get total %lu kernelNames", kernelSymbolNames_.size());
+    isSimt_ = GetSimtSymbolFromBinary(elfData_.data(), elfData_.size());
     rtDevBinary_t tempDevBin{};
     tempDevBin.data = elfData_.data();
     tempDevBin.length = elfData_.size();
@@ -428,4 +454,9 @@ bool RegisterContext::KernelSymbolNameIsMix(const std::string &kernelName) const
         }
     }
     return false;
+}
+
+bool RegisterContext::HasSimtSymbol() const
+{
+    return isSimt_;
 }

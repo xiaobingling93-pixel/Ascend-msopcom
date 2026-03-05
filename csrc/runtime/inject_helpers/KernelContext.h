@@ -280,6 +280,8 @@ public:
     void AddHdlRegisterEvent(const KernelHandle *hdl, const rtDevBinary_t *bin,
         const rtDevBinary_t *stubBin = nullptr);
 
+    bool HasSimtSymbol() const { return isSimt_; }
+
     void SetArgsSize(const rtArgsSizeInfo_t * const sizeInfo);
 
     void ParseMetaDataFromBinary(rtDevBinary_t const &binary, const rtArgsEx_t *argsInfo = nullptr);
@@ -438,4 +440,5 @@ private:
     uint32_t argsSize_{};
     uint32_t kernelParamNum_{};
     uint32_t simtUbDynamicSize_{};
+    bool isSimt_{false};
 };

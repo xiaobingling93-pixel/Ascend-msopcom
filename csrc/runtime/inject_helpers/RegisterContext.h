@@ -57,6 +57,8 @@ uint32_t GetFlagByMagic(const uint32_t magic);
 
 uint64_t GetMetaSection(const rtDevBinary_t &binary, const std::string &kernelName, std::vector<uint8_t> &metaData);
 
+bool GetSimtSymbolFromBinary(const char *data, uint64_t length);
+
 struct RegisterParam {
     uint64_t regId{0};
     uint32_t magic{0};
@@ -128,6 +130,8 @@ public:
     /// 获取kernelName对应的symbol名称判断是否为mix算子，提供给动态插桩使用
     bool KernelSymbolNameIsMix(const std::string &kernelName) const;
 
+    bool HasSimtSymbol() const;
+
 private:
     std::string binPath_;
     std::vector<char> elfData_;
@@ -141,6 +145,7 @@ private:
     void *hdl_{nullptr};
     bool inited_{false};
     bool isFromFile_ {false};
+    bool isSimt_{false};
     aclrtBinaryLoadOptionType type_ {aclrtBinaryLoadOptionType::NONE};
 
     std::shared_ptr<RegisterContext> CloneFromBin(const std::string &newBinPath) const;

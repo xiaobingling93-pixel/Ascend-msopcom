@@ -125,7 +125,8 @@ void HijackedFuncOfAclrtLaunchKernelImpl::ProfPreForInstrProf(const std::functio
     auto funcStub = [this]() {
         return (aclrtLaunchKernelImplOrigin(funcHandle_, blockDim_, argsData_, argsSize_, stream_) == ACL_SUCCESS);
     };
-    if (ProfConfig::Instance().IsPCSamplingEnabled()) {
+    if (ProfConfig::Instance().IsPCSamplingDbiEnabled() && launchCtx_->GetFuncContext()->GetRegisterContext()->HasSimtSymbol()) {
+        ProfConfig::Instance().SetPCSamplingFlag(true);
         uint8_t *memInfo = nullptr;
         uint64_t memSize = PrepareDbiTaskForInstrProf(INSTR_PROF_MODE_PC_SAMPLING, memInfo);
         profObj_->InstrProfData(stream, funcStub);
@@ -138,7 +139,7 @@ void HijackedFuncOfAclrtLaunchKernelImpl::ProfPreForInstrProf(const std::functio
                 NumToHexString(kernelAddr), std::fstream::out | std::fstream::binary);
         }
     }
-        if (ProfConfig::Instance().IsTimelineEnabled()) {
+    if (ProfConfig::Instance().IsTimelineEnabled()) {
         uint8_t *memInfo = nullptr;
         PrepareDbiTaskForInstrProf(INSTR_PROF_MODE_BIU_PERF, memInfo);
         ProfPre(funcStub, bbCountTask, stream);
