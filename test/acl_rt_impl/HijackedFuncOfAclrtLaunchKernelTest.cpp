@@ -94,6 +94,7 @@ TEST_F(HijackedFuncOfAclrtLaunchKernelTest, test_operand_record_expand_args_fail
     MOCKER(&RunDBITask, FuncContextSP(*)(const LaunchContextSP &)).stubs().will(returnValue(false));
     uint8_t* testBuffer = nullptr;
     MOCKER(&InitMemory, uint8_t*(*)(uint64_t)).stubs().will(returnValue(testBuffer));
+    MOCKER(&rtGetL2CacheOffsetOrigin).stubs().will(returnValue(ACL_SUCCESS));
     HijackedFuncOfAclrtLaunchKernelImpl inst;
     auto func = []() -> void {};
     inst.refreshParamFunc_ = func;

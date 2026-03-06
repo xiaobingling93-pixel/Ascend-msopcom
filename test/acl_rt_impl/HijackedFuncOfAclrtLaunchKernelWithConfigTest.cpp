@@ -49,6 +49,7 @@ TEST_F(HijackedFuncOfAclrtLaunchKernelWithConfigTest, mock_valid_hijacked_input_
     MOCKER(&aclrtGetSocNameImplOrigin).stubs().will(returnValue(soc.c_str()));
     MOCKER(&aclrtMallocImplOrigin).stubs().will(returnValue(ACL_SUCCESS));
     MOCKER(&aclrtMemcpyImplOrigin).stubs().will(returnValue(ACL_SUCCESS));
+    MOCKER(&rtGetL2CacheOffsetOrigin).stubs().will(returnValue(ACL_SUCCESS));
     inst.originfunc_ = [](aclrtFuncHandle funcHandle, uint32_t blockDim, aclrtStream stream,
                           aclrtLaunchKernelCfg *cfg, aclrtArgsHandle argsHandle, void *reserve) { return ACL_SUCCESS; };
     ASSERT_EQ(inst.Call(funcHandle_, 3, stream, nullptr, argsHandle_, nullptr), ACL_SUCCESS);
@@ -102,6 +103,7 @@ TEST_F(HijackedFuncOfAclrtLaunchKernelWithConfigTest, test_operand_record_expand
     MOCKER(&RunDBITask, FuncContextSP(*)(const LaunchContextSP &)).stubs().will(returnValue(false));
     uint8_t* testBuffer = nullptr;
     MOCKER(&InitMemory, uint8_t*(*)(uint64_t)).stubs().will(returnValue(testBuffer));
+    MOCKER(&rtGetL2CacheOffsetOrigin).stubs().will(returnValue(ACL_SUCCESS));
     HijackedFuncOfAclrtLaunchKernelWithConfigImpl inst;
     auto func = []() -> void {};
     inst.refreshParamFunc_ = func;

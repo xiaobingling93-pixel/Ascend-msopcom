@@ -161,6 +161,7 @@ TEST_F(InstrReportTest, init_with_initialized_memory_expect_return_resued_memory
 {
     MOCKER(&DevMemManager::MallocMemory).stubs().will(invoke(&MemoryMallocStub));
     MOCKER(&aclrtMemcpyImplOrigin).stubs().will(returnValue(ACL_ERROR_NONE));
+    MOCKER(&rtGetL2CacheOffsetOrigin).stubs().will(returnValue(ACL_ERROR_NONE));
     DevMemManager::Instance().SetMemoryInitFlag(true);
     MOCKER(&SanitizerConfigManager::GetConfig).stubs().will(returnValue(SanitizerConfig ()));
 
@@ -173,6 +174,7 @@ TEST_F(InstrReportTest, init_with_rtMemset_success_expect_return_valid_memory)
     MOCKER(&DevMemManager::MallocMemory).stubs().will(invoke(&MemoryMallocStub));
     MOCKER(&aclrtMemcpyImplOrigin).stubs().will(returnValue(ACL_ERROR_NONE));
     MOCKER(&aclrtMemsetImplOrigin).stubs().will(returnValue(ACL_ERROR_NONE));
+    MOCKER(&rtGetL2CacheOffsetOrigin).stubs().will(returnValue(ACL_ERROR_NONE));
     DevMemManager::Instance().SetMemoryInitFlag(false);
     MOCKER(&SanitizerConfigManager::GetConfig).stubs().will(returnValue(SanitizerConfig ()));
 
@@ -187,6 +189,7 @@ TEST_F(InstrReportTest, init_with_different_kernel_type_expect_return_correct_me
     MOCKER(&DevMemManager::MallocMemory).stubs().will(invoke(&MemoryMallocStub));
     MOCKER(&aclrtMemcpyImplOrigin).stubs().will(returnValue(ACL_ERROR_NONE));
     MOCKER(&aclrtMemsetImplOrigin).stubs().will(returnValue(ACL_ERROR_NONE));
+    MOCKER(&rtGetL2CacheOffsetOrigin).stubs().will(returnValue(ACL_ERROR_NONE));
     DevMemManager::Instance().SetMemoryInitFlag(false);
     MOCKER(&SanitizerConfigManager::GetConfig).stubs().will(returnValue(SanitizerConfig ()));
 
@@ -351,6 +354,7 @@ TEST_F(InstrReportTest, init_with_valid_cache_size_expect_return_success)
     MOCKER(&aclrtGetDeviceImplOrigin).stubs().will(invoke(&GetDeviceOriginStub));
     MOCKER(&aclrtMemcpyImplOrigin).stubs().will(returnValue(ACL_ERROR_NONE));
     MOCKER(&aclrtMemsetImplOrigin).stubs().will(returnValue(ACL_ERROR_NONE));
+    MOCKER(&rtGetL2CacheOffsetOrigin).stubs().will(returnValue(ACL_ERROR_NONE));
     MOCKER(&DeviceContext::GetSocVersion).stubs().will(returnValue(string("Ascend310P3")));
     DevMemManager::Instance().SetMemoryInitFlag(false);
 

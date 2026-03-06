@@ -52,7 +52,7 @@ git config --global credential.helper store
     ```
     mkdir build_ut
     cd build_ut
-    cmake .. –DBUILD_TEST=on
+    cmake .. -DBUILD_TESTS=ON
     make -j8 injectionTest
     export LD_LIBRARY_PATH=$PWD/test/stub:$LD_LIBRARY_PATH
     ./test/injectionTest

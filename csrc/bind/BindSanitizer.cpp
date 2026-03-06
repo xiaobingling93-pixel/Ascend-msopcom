@@ -566,13 +566,6 @@ rtError_t rtModelBindStream(rtModel_t mdl, rtStream_t stm, uint32_t flag)
     return instance.Call(mdl, stm, flag);
 }
 
-rtError_t rtGetL2CacheOffset(uint32_t deviceId, uint64_t *offset)
-{
-    PRINT_ENTER_INSTRUMENTOR;
-    HijackedFuncOfGetL2CacheOffset instance;
-    return instance.Call(deviceId, offset);
-}
-
 rtError_t rtCtxGetOverflowAddr(void **overflowAddr)
 {
     HijackedFuncOfCtxGetOverflowAddr instance;

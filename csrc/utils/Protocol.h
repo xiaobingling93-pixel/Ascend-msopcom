@@ -257,6 +257,7 @@ struct KernelInfo {
     uint64_t totalCacheSize{};
     uint32_t kernelParamNum{};                       // kernel入参个数
     KernelType kernelType{};                          // 当前算子的kernel类型，保存在0核头部
+    uint64_t l2CacheOffset;
 };
 
 /// 该结构体主要包含当前block包含的信息，保存在每个核的头部
