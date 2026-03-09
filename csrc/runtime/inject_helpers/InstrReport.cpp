@@ -156,12 +156,18 @@ inline bool InitGlobalHead(RecordGlobalHead &head, uint64_t blockDim, KernelType
         return false;
     }
 
-    rtError_t err = rtGetL2CacheOffsetOrigin(DeviceContext::GetRunningDeviceId(), &head.kernelInfo.l2CacheOffset);
-    if (err != RT_ERROR_NONE) {
-        ERROR_LOG("Get L2Cache Offset failed, ret is %d.", err);
-        return false;
+    // 检查是否需要双页表地址还原，如是则配置偏移地址
+    DeviceType deviceType = GetDeviceTypeBySocVersion(DeviceContext::Local().GetSocVersion());
+    if(IsC220Arch(deviceType)) {
+        rtError_t err = rtGetL2CacheOffsetOrigin(DeviceContext::GetRunningDeviceId(), &head.kernelInfo.l2CacheOffset);
+        if (err != RT_ERROR_NONE) {
+            ERROR_LOG("Get L2Cache Offset failed, ret is %d.", err);
+            return false;
+        }
+        DEBUG_LOG("GlobalHead get L2Cache Offset = %lu", head.kernelInfo.l2CacheOffset);
+    } else {
+        head.kernelInfo.l2CacheOffset = 0;
     }
-    DEBUG_LOG("GlobalHead get L2Cache Offset = %lu", head.kernelInfo.l2CacheOffset);
 
     SanitizerConfig cliConfig = SanitizerConfigManager::Instance().GetConfig();
     head.checkParms.cacheSize = cliConfig.cacheSize;
@@ -173,7 +179,6 @@ inline bool InitGlobalHead(RecordGlobalHead &head, uint64_t blockDim, KernelType
     head.checkParms.registerCheck = cliConfig.registerCheck;
     head.kernelInfo.kernelType = kernelType;
     head.kernelInfo.kernelParamNum = KernelContext::Instance().GetKernelParamNum();
-    DeviceType deviceType = GetDeviceTypeBySocVersion(DeviceContext::Local().GetSocVersion());
     head.supportSimt = SupportSimt(deviceType);
     if (head.supportSimt) {
         // ====|=====|=============
