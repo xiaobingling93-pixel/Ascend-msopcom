@@ -34,8 +34,7 @@ void HijackedFuncOfMsprofReportAdditionalInfo::Pre(uint32_t agingFlag, const VOI
         auto *hostData = static_cast<struct MsprofAdditionalInfo *>(data);
         std::string outputPath = ProfDataCollect::GetAicoreOutputPath(device);
         if (outputPath.empty() || hostData == nullptr ||
-            hostData->level != MSPROF_REPORT_AIC_LEVEL || hostData->type != MSPROF_REPORT_AIC_TIMESTAMP_TYPE ||
-            (!KernelContext::Instance().GetMC2Flag() && !KernelContext::Instance().GetLcclFlag())) {
+            hostData->level != MSPROF_REPORT_AIC_LEVEL || hostData->type != MSPROF_REPORT_AIC_TIMESTAMP_TYPE) {
             return;
         }
         std::string binFile = JoinPath({outputPath, "aic_timestamp.bin"});

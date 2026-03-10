@@ -351,6 +351,7 @@ void HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl::ProfPost()
         profObj_->GenBBcountFile(regId_, memSize_, memInfo_);
     }
     if (profObj_->IsMemoryChartNeedGen()) {
+        ProfConfig::Instance().RestoreMemoryByMode();
         KernelMatcher::Config matchConfig;
         std::string path = GetEnv(DEVICE_PROF_DUMP_PATH_ENV);
         DBITaskConfig::Instance().Init(BIType::CUSTOMIZE, ProfConfig::Instance().GetPluginPath(), matchConfig, path);

@@ -814,26 +814,18 @@ void DataCollectInDevice::ProfCommandAction(MsprofCommandHandleType type) const
     command.devIdList[0] = static_cast<uint32_t>(deviceId_);
     command.modelId = PROF_INVALID_MODE_ID;
     auto res = ACL_SUCCESS;
-    if (StartsWith(DeviceContext::Local().GetSocVersion(), "Ascend310P")) {
+    std::string socVersion = DeviceContext::Local().GetSocVersion();
+    auto chipType = GetProductTypeBySocVersion(socVersion);
+    if (IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND310P_SERIES)) {
         command.profSwitch = PROF_AICORE_METRICS;
-        res = profSetProfCommandOrigin(static_cast<void *>(&command), sizeof(RtProfCommandHandleT));
     }
-    if (profL2cacheEvict_ && type == MsprofCommandHandleType::PROF_COMMANDHANDLE_TYPE_START) {
-        command.profSwitch = PROF_L2CACHE;
-        // A2对于上板打点图必须要一起下发L2cache和timestamp通道
-        if (ProfInjectHelper::Instance().profTimestampEnabled_) {
-            command.profSwitch = PROF_L2CACHE | PROF_OP_TIMESTAMP;
-        }
-        res = profSetProfCommandOrigin(static_cast<void *>(&command), sizeof(RtProfCommandHandleT));
+    if (IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND910B_SERIES) || IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND910_93_SERIES)) {
+        command.profSwitch = PROF_L2CACHE | PROF_OP_TIMESTAMP;
     }
-
-    if (ProfConfig::Instance().IsTimelineEnabled() || ProfConfig::Instance().IsPCSamplingEnabled()) {
-        command.profSwitch = PROF_INSTR;
-        if (ProfInjectHelper::Instance().profTimestampEnabled_) {
-            command.profSwitch = PROF_INSTR | PROF_OP_TIMESTAMP;
-        }
-        res = profSetProfCommandOrigin(static_cast<void *>(&command), sizeof(RtProfCommandHandleT));
+    if (IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND950_SERIES) && (ProfConfig::Instance().IsTimelineEnabled() || ProfConfig::Instance().IsPCSamplingEnabled())) {
+        command.profSwitch = PROF_INSTR | PROF_OP_TIMESTAMP;
     }
+    res = profSetProfCommandOrigin(static_cast<void *>(&command), sizeof(RtProfCommandHandleT));
     DEBUG_LOG("profSetProfCommandOrigin type %d res is %d", static_cast<int>(type), static_cast<int>(res));
 }
 
@@ -1122,17 +1114,14 @@ bool DataCollectInDevice::KernelReplay(rtStream_t stream, const std::function<bo
     param.stream = stream;
     isClearParamSuccess_ = !ProfConfig::Instance().IsAppReplay() && PrepareClearL2CacheParam(param);
     WarmUp(stream, kernelLaunchFunc);
-
+    ProfCommandAction(MsprofCommandHandleType::PROF_COMMANDHANDLE_TYPE_START);
     if (SupportProfL2CacheEvict()) {
-        ProfCommandAction(MsprofCommandHandleType::PROF_COMMANDHANDLE_TYPE_START);
         bool res = ReplayOnce(stream, kernelLaunchFunc, param);
         profL2cacheEvict_ = false;
         if (ProfConfig::Instance().IsAppReplay()) {
             return res;
         }
     }
-    // 310P需要开启采集通道,A2无需操作
-    ProfCommandAction(MsprofCommandHandleType::PROF_COMMANDHANDLE_TYPE_START);
     for (; replayCount_ < GetReplayTimes() && !IsReceiveSignal(); replayCount_++) {
         auto profRes = ReplayOnce(stream, kernelLaunchFunc, param);
         funcRet = funcRet && profRes;
@@ -1140,8 +1129,6 @@ bool DataCollectInDevice::KernelReplay(rtStream_t stream, const std::function<bo
             return funcRet;
         }
     }
-
-    ProfCommandAction(MsprofCommandHandleType::PROF_COMMANDHANDLE_TYPE_STOP);
     // MC2调优去掉Restore, 配合取消AICORE 劫持函数CALL的那次调用，取得最后一次重放的aicore的timeline
     if (!isMC2 && !KernelContext::Instance().GetLcclFlag()) {
         MemoryContext::Instance().Restore();
@@ -1290,6 +1277,7 @@ bool DataCollectInDevice::RangeReplay(const rtStream_t &stream, const aclmdlRI &
     param.stream = stream;
     isClearParamSuccess_ = PrepareClearL2CacheParam(param);
     replayCount_ = ProfConfig::Instance().GetInitReplayCount();
+    ProfCommandAction(MsprofCommandHandleType::PROF_COMMANDHANDLE_TYPE_START);
     for (; replayCount_ < GetReplayTimes() && !IsReceiveSignal(); replayCount_++) {
         if (replayCount_ != 0 && IsPmuEventEmpty(replayCount_)) {
             break;

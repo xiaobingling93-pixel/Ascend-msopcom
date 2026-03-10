@@ -151,6 +151,7 @@ void HijackedFuncOfKernelLaunchWithFlagV2::ProfPost()
         }
     }
     if (profObj_->IsMemoryChartNeedGen()) {
+        ProfConfig::Instance().RestoreMemoryByMode();
         rtStreamSynchronizeOrigin(stm_);
         refreshParamFunc_();
         memSize_ = BLOCK_MEM_SIZE * GetCoreNumForDbi(blockDim_);

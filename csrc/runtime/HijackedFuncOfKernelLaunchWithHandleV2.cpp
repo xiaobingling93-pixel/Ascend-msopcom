@@ -176,6 +176,7 @@ void HijackedFuncOfKernelLaunchWithHandleV2::ProfPost()
     }
     std::string path = GetEnv(DEVICE_PROF_DUMP_PATH_ENV);
     if (profObj_->IsMemoryChartNeedGen()) {
+        ProfConfig::Instance().RestoreMemoryByMode();
         rtStreamSynchronizeOrigin(stm_);
         refreshParamFunc_();
         auto blockDim = GetCoreNumForDbi(blockDim_);

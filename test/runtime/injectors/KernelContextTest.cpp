@@ -369,6 +369,7 @@ TEST_F(KernelContextTest, mock_reg_launch_event_then_save_expect_true)
     bool(KernelContext::*funcPtr)(uint64_t, const string&) = &KernelContext::DumpKernelObject;
     MOCKER(funcPtr).stubs().will(returnValue(true));
     MOCKER(&KernelContext::DeviceContext::DumpKernelArgs).stubs().will(returnValue(true));
+    MOCKER(&GetSymInfoFromBinary).stubs().will(returnValue(true));
     nlohmann::json jsonData;
     jsonData["bin_path"] = "abc";
     MOCKER(&KernelContext::ContextConfig::ToJson).stubs().with(outBound(jsonData)).will(returnValue(true));

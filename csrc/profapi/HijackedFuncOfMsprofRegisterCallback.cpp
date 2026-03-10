@@ -44,8 +44,6 @@ void HijackedFuncOfMsprofRegisterCallback::Pre(uint32_t moduleId, ProfCommandHan
             VOID_PTR data = &msprofCommandHandle;
             uint32_t len = sizeof(MsprofCommandHandle);
             handle(type, data, len);
-            // 设置profTimestampEnabled_标记当前需要进行打点流水展示，L2cache采集需要依据该标记判断打开相应通道
-            ProfInjectHelper::Instance().profTimestampEnabled_ = true;
         }
     }
 }

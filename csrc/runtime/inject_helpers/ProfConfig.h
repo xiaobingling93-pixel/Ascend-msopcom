@@ -244,6 +244,8 @@ public:
 
     void SetLogTransFlag(bool transFlag);
 
+    void RestoreMemoryByMode() const;
+
     void NotifyStopTransLog();
 
     const std::string &GetSocVersion() const

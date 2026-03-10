@@ -27,7 +27,7 @@
 #include "runtime/inject_helpers/DeviceContext.h"
 #include "runtime/RuntimeOrigin.h"
 #include "InstrReport.h"
-
+#include "MemoryContext.h"
 
 namespace {
 constexpr uint32_t MAX_NUM_PACKET = 64U;
@@ -92,6 +92,16 @@ bool ProfConfig::IsEnableLogTrans() const
 void ProfConfig::SetLogTransFlag(bool transFlag)
 {
     isCaLogTrans_ = transFlag;
+}
+
+void ProfConfig::RestoreMemoryByMode() const
+{
+    if (isAppReplay_ || isRangeReplay_) {
+        return;
+    }
+    if (!MemoryContext::Instance().Restore()) {
+        DEBUG_LOG("Failed to restore memory by kernel mode");
+    }
 }
 
 void ProfConfig::RequestLogTranslate(const std::string &outputPath, const std::string &kernelName)

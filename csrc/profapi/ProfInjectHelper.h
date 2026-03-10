@@ -29,6 +29,5 @@ public:
     }
     std::map<uint32_t, ProfCommandHandle> handleMap_;
     std::map<int32_t, bool> aicpuHandleCallMap_;
-    bool profTimestampEnabled_ = false;
 };
 #endif // __PROF_INJECT_HELPER_H__
