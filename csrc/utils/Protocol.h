@@ -191,6 +191,7 @@ enum class RegisterValueType : uint64_t {
 struct RegisterPayload {
     RegisterValueType regValType;
     uint64_t regVal;    // 动态插桩场景无法感知具体类型，统一使用uint64_保存和打印寄存器值，使用时根据 regValType 取值按对应格式解析
+    int64_t regIdx;     // 物理核映射的idx，用于GlobalHead内持久化和工具侧回放时索引数组
 };
 
 struct Register {
@@ -243,7 +244,7 @@ struct Register {
     uint64_t quantPre;
     uint64_t quantPost;
     RegisterPayload lreluAlpha;
-    uint64_t rsv[6];    // 64字节对齐
+    uint64_t rsv[5];    // 64字节对齐
 };
 
 enum class BlockType : uint8_t {
