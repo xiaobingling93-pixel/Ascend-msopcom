@@ -227,11 +227,7 @@ public:
 
     bool IsTimelineEnabled() const { return profConfig_.dbiFlag & DBI_FLAG_INSTR_PROF_END;}
 
-    bool IsPCSamplingDbiEnabled() const { return profConfig_.dbiFlag & DBI_FLAG_INSTR_PROF_START; }
-
-    bool IsPCSamplingEnabled() const { return isPCSampling_; }
-
-    void SetPCSamplingFlag(bool flag) { isPCSampling_ = flag; }
+    bool IsPCSamplingEnabled() const { return profConfig_.dbiFlag & DBI_FLAG_INSTR_PROF_START; }
 
     bool IsDbi() const
     {
@@ -284,6 +280,5 @@ private:
     bool isAppReplay_ {false};
     bool isRangeReplay_ {false};
     bool isCaLogTrans_ {false};
-    bool isPCSampling_ {false};
 };
 #endif // __PROF_TYPE_H__

@@ -125,8 +125,7 @@ void HijackedFuncOfAclrtLaunchKernelImpl::ProfPreForInstrProf(const std::functio
     auto funcStub = [this]() {
         return (aclrtLaunchKernelImplOrigin(funcHandle_, blockDim_, argsData_, argsSize_, stream_) == ACL_SUCCESS);
     };
-    if (ProfConfig::Instance().IsPCSamplingDbiEnabled() && launchCtx_->GetFuncContext()->GetRegisterContext()->HasSimtSymbol()) {
-        ProfConfig::Instance().SetPCSamplingFlag(true);
+    if (ProfConfig::Instance().IsPCSamplingEnabled() && launchCtx_->GetFuncContext()->GetRegisterContext()->HasSimtSymbol()) {
         uint8_t *memInfo = nullptr;
         uint64_t memSize = PrepareDbiTaskForInstrProf(INSTR_PROF_MODE_PC_SAMPLING, memInfo);
         profObj_->InstrProfData(stream, funcStub);

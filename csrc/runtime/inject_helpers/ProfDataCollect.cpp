@@ -818,12 +818,14 @@ void DataCollectInDevice::ProfCommandAction(MsprofCommandHandleType type) const
     auto chipType = GetProductTypeBySocVersion(socVersion);
     if (IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND310P_SERIES)) {
         command.profSwitch = PROF_AICORE_METRICS;
-    }
-    if (IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND910B_SERIES) || IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND910_93_SERIES)) {
+    } else if (IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND910B_SERIES) || IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND910_93_SERIES)) {
         command.profSwitch = PROF_L2CACHE | PROF_OP_TIMESTAMP;
-    }
-    if (IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND950_SERIES) && (ProfConfig::Instance().IsTimelineEnabled() || ProfConfig::Instance().IsPCSamplingEnabled())) {
-        command.profSwitch = PROF_INSTR | PROF_OP_TIMESTAMP;
+    } else if (IsChipSeriesTypeValid(chipType, ChipProductType::ASCEND950_SERIES)) {
+        bool isSimt = launchCtx_ != nullptr ? launchCtx_->GetFuncContext()->GetRegisterContext()->HasSimtSymbol() :
+            KernelContext::Instance().HasSimtSymbol();
+        if (ProfConfig::Instance().IsTimelineEnabled() || (ProfConfig::Instance().IsPCSamplingEnabled() && isSimt)) {
+            command.profSwitch = PROF_INSTR | PROF_OP_TIMESTAMP;
+        }
     }
     res = profSetProfCommandOrigin(static_cast<void *>(&command), sizeof(RtProfCommandHandleT));
     DEBUG_LOG("profSetProfCommandOrigin type %d res is %d", static_cast<int>(type), static_cast<int>(res));
@@ -835,7 +837,9 @@ bool DataCollectInDevice::StartProf(std::thread &th)
         SignalWrapper::RegisterCallback(SIGINT, HandleSigInt);
     });
     DEBUG_LOG("MSOPT INJECTION SUCCESS");
-    if (!taskPtr_->Start(replayCount_)) {
+    bool isSimt = launchCtx_ != nullptr ? launchCtx_->GetFuncContext()->GetRegisterContext()->HasSimtSymbol() :
+        KernelContext::Instance().HasSimtSymbol();
+    if (!taskPtr_->Start(replayCount_, isSimt)) {
         return false;
     }
     {

@@ -96,8 +96,7 @@ void HijackedFuncOfKernelLaunch::ProfPreForInstrProf(const std::function<bool(vo
         return (rtKernelLaunchOrigin(this->stubFunc_, this->blockDim_, this->args_, this->argsSize_,
                                     this->smDesc_, this->stm_) == RT_ERROR_NONE);
     };
-    if (ProfConfig::Instance().IsPCSamplingDbiEnabled() && KernelContext::Instance().HasSimtSymbol()) {
-        ProfConfig::Instance().SetPCSamplingFlag(true);
+    if (ProfConfig::Instance().IsPCSamplingEnabled() && KernelContext::Instance().HasSimtSymbol()) {
         uint8_t *memInfo = nullptr;
         uint64_t memSize= PrepareDbiTaskForInstrProf(INSTR_PROF_MODE_PC_SAMPLING, memInfo);
         KernelContext::StubFuncPtr stubFuncPtr{this->stubFunc_};
