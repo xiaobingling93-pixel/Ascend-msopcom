@@ -46,7 +46,8 @@ constexpr char const *DEVICE_PROF_DUMP_PATH_ENV = {"DEVICE_PROF_DUMP_PATH"};
 constexpr char const *MSOPPROF_EXE_PATH_ENV = {"MSOPPROF_EXE_PATH"};
 constexpr uint64_t BLOCK_GAP = 64U; // 每个block间需要间隔64B
 constexpr uint64_t MAX_BLOCK = 108U; // 最大108个block
-constexpr uint64_t SIMT_THREAD_GAP = 64U;
+constexpr uint64_t SIMT_THREAD_GAP = 64U; // 每个SIMT thread间需要间隔64B
+constexpr uint32_t MAX_THREAD_NUM = 2048U; // SIMT thread个数
 constexpr uint64_t MAX_BLOCK_DATA_SIZE = 100U * 1024 * 1024; // 每个block存储100MB数据
 constexpr uint64_t BLOCK_MEM_SIZE = MAX_BLOCK_DATA_SIZE + BLOCK_GAP; // 每个block占用内存大小
 constexpr uint64_t RECORD_OVERFLOW_BIT = 1ULL << 63; // BlockHeader溢出标记位
@@ -64,7 +65,7 @@ struct InstrChnReadCtrl {
 };
 
 enum class ProfDBIType {
-    AS_IS = 0, // 不插装 
+    AS_IS = 0, // 不插桩 
     OPERAND_RECORD, // operand record桩
     MEMORY_CHART, // memory chart桩
     INSTR_PROF_START, // start桩
@@ -77,12 +78,6 @@ constexpr uint32_t DBI_FLAG_MEMORY_CHART = 1U << static_cast<uint32_t>(ProfDBITy
 constexpr uint32_t DBI_FLAG_INSTR_PROF_START = 1U << static_cast<uint32_t>(ProfDBIType::INSTR_PROF_START);
 constexpr uint32_t DBI_FLAG_INSTR_PROF_END = 1U << static_cast<uint32_t>(ProfDBIType::INSTR_PROF_END);
 constexpr uint32_t DBI_FLAG_BB_COUNT = 1U << static_cast<uint32_t>(ProfDBIType::BB_COUNT);
-
-struct OperandRecord {
-    uint64_t instructions{};
-    uint64_t operands{};
-    uint64_t pc {};
-};
 
 enum class OperandType : uint8_t {
     // 浮点数据类型 - 新增浮点类型必须添加在 DATA_FLOAT_MAX 之前
@@ -131,6 +126,7 @@ struct OperandHeader {
     uint32_t magicWords;
     uint32_t reverse;
 };
+
 struct MessageOfProfConfig {
     MstxProfConfig mstxProfConfig { };
     uint32_t replayCount {UINT32_INVALID};
@@ -169,6 +165,46 @@ enum class ProfPacketType : uint32_t {
 };
 
 #pragma pack(4)
+struct OperandRecord {
+    uint64_t instructions{};
+    uint64_t operands{};
+    uint64_t funcType{};
+};
+
+// 考虑记录条目数过多时，把length最高位置1，剩余63位记录经过桩的请求总数，count维持不变，保留可读数据
+struct BlockHeader {
+    uint64_t count;    // 该block记录的条目数
+    uint64_t length;   // 该block已经存储的长度，不包含BlockHeader自身，device侧使用
+    uint64_t ndPara;   // #3023 set_nd_para，MOV_FP类指令使用
+    uint64_t loop3Para;   // #set_loop3Para_para，FIX_L0C_TO_OUT类指令使用
+    uint64_t channelPara;   // #set_channel_para，FIX_L0C_TO_OUT类指令使用
+    uint64_t loopSizeOuttol1;      // set_loop_size_outtol1，MOV_OUT_TO_L1_ALIGN_V2指令使用
+    uint64_t loop1StrideOuttol1;   // set_loop1_stride_outtol1，MOV_OUT_TO_L1_ALIGN_V2类指令使用
+    uint64_t loop2StrideOuttol1;   // set_loop2_stride_outtol1，MOV_OUT_TO_L1_ALIGN_V2类指令使用
+    uint64_t loopSizeOuttoub;      // set_loop_size_outtoub，MOV_OUT_TO_L1_ALIGN_V2指令使用
+    uint64_t loop1StrideOuttoub;   // set_loop1_stride_outtoub，MOV_OUT_TO_L1_ALIGN_V2指令使用
+    uint64_t loop2StrideOuttoub;   // set_loop2_stride_outtoub，MOV_OUT_TO_L1_ALIGN_V2指令使用
+    uint64_t loopSizeUbToOut; // #3709 set_loop_size_para_ubtout，MOV_UB_TO_OUT_ALIGN_V2指令使用
+    uint64_t loop1StrideUbToOut; // #2991 set_loop1_size_para_ubtout，MOV_UB_TO_OUT_ALIGN_V2指令使用
+    uint64_t loop2StrideUbToOut; // #2996 set_loop2_size_para_ubtout，MOV_UB_TO_OUT_ALIGN_V2指令使用
+    uint64_t mte2NzPara;           // set_mte2_nz_para，MOV_OUT_TO_L1_MULTI_ND2NZ指令使用
+    uint64_t padCntNdDma;          // set_pad_cnt_nddma，NDDMA_OUT_TO_UB指令使用
+    uint64_t loop0StrideNdDma;     // set_loop0_stride_nddma，NDDMA_OUT_TO_UB指令使用
+    uint64_t loop1StrideNdDma;     // set_loop1_stride_nddma，NDDMA_OUT_TO_UB指令使用
+    uint64_t loop2StrideNdDma;     // set_loop2_stride_nddma，NDDMA_OUT_TO_UB指令使用
+    uint64_t loop3StrideNdDma;     // set_loop3_stride_nddma，NDDMA_OUT_TO_UB指令使用
+    uint64_t loop4StrideNdDma;     // set_loop4_stride_nddma，NDDMA_OUT_TO_UB指令使用
+    uint64_t mte2SrcPara;          // set_mte2_src_para，LOAD_OUT_TO_L1_2Dv2指令使用
+};
+
+struct DBIDataHeader {
+    uint64_t count;      // 该block记录的条目数
+    uint64_t length;     // Header后紧跟的数据长度，也就是输出路径长度或者动态插桩数据长度
+    uint64_t overflow;   // 缓冲区不足而未记录的数据条目数
+    uint16_t blockId;
+    uint8_t endFlag;    // 该path下所有block的数据都发送完成
+};
+
 struct ProfPacketHead {
     ProfPacketType type;
     uint32_t length;

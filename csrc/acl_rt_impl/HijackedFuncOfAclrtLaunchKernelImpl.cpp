@@ -290,7 +290,7 @@ void HijackedFuncOfAclrtLaunchKernelImpl::DoOperandRecord()
     aclrtSynchronizeStreamImplOrigin(stream_);                               
     refreshParamFunc_();
     uint64_t sizePerAllType = static_cast<uint32_t>(OperandType::END) * sizeof(OperandRecord) + SIMT_THREAD_GAP;
-    memSize_ = sizeof(OperandHeader) + (sizePerAllType * 2049 + BLOCK_GAP) *  GetCoreNumForDbi(blockDim_);
+    memSize_ = sizeof(OperandHeader) + (sizePerAllType * (MAX_THREAD_NUM + 1) + BLOCK_GAP) *  GetCoreNumForDbi(blockDim_);
     auto argsCtx = launchCtx_->GetArgsContext()->Clone();
     memInfo_ = InitMemory(memSize_);
     if (memInfo_ == nullptr || argsCtx == nullptr || !argsCtx->ExpandArgs(&memInfo_, sizeof(uintptr_t), DBITaskConfig::Instance().argsSize_)) {

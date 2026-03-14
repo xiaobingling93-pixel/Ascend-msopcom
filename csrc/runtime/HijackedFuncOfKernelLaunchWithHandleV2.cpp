@@ -198,7 +198,7 @@ void HijackedFuncOfKernelLaunchWithHandleV2::ProfPost()
         rtStreamSynchronizeOrigin(stm_);
         refreshParamFunc_();
         uint64_t sizePerAllType = static_cast<uint32_t>(OperandType::END) * sizeof(OperandRecord) + SIMT_THREAD_GAP;
-        memSize_ = sizeof(OperandHeader) + (sizePerAllType * 2049 + BLOCK_GAP) * GetCoreNumForDbi(blockDim_);
+        memSize_ = sizeof(OperandHeader) + (sizePerAllType * (MAX_THREAD_NUM + 1) + BLOCK_GAP) * GetCoreNumForDbi(blockDim_);
         DBITaskConfig::Instance().Init(BIType::CUSTOMIZE,
             ProfConfig::Instance().GetPluginPath(ProfDBIType::OPERAND_RECORD), {}, path);
         memInfo_ = InitMemory(memSize_);
