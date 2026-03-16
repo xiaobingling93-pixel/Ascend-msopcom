@@ -18,9 +18,6 @@
 #include <gtest/gtest.h>
 #include <cstdlib>
 #include "mockcpp/mockcpp.hpp"
-#include "acl_rt_impl/HijackedFunc.h"
-#include "acl_rt_impl/AscendclImplOrigin.h"
-#include "core/FuncSelector.h"
 #define private public
 #define protected public
 #include "ascend_hal/HijackedFunc.h"
@@ -28,6 +25,9 @@
 #include "core/HijackedFuncTemplate.h"
 #undef private
 #undef protected
+#include "acl_rt_impl/HijackedFunc.h"
+#include "acl_rt_impl/AscendclImplOrigin.h"
+#include "core/FuncSelector.h"
 using namespace std;
 
 TEST(HalGetSocVersion, test_call_function_without_originfunc)

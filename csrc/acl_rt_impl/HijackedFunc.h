@@ -24,6 +24,7 @@
 #include "runtime/inject_helpers/LaunchContext.h"
 #include "runtime/inject_helpers/ProfDataCollect.h"
 #include "acl_rt_impl/AclRuntimeConfig.h"
+#include "runtime/inject_helpers/ProfConfig.h"
 
 class AclErrorTag;
  
@@ -458,7 +459,7 @@ private:
     void DoOperandRecord();
     void ProfPost();
     void ProfPreForInstrProf(const std::function<bool(void)> &func,const std::function<void(const std::string &)> &bbCountTask, rtStream_t stream);
- 	uint64_t PrepareDbiTaskForInstrProf(uint8_t mode, uint8_t *&memInfo);
+ 	bool PrepareDbiTaskForInstrProf(ProfDBIType mode, uint64_t memSize);
     void SanitizerPre();
     void SanitizerPost();
 private:
@@ -495,7 +496,7 @@ private:
     void ProfPre(const std::function<bool(void)> &func, const std::function<void(const std::string &)> &bbCountTask,
                  aclrtStream stm);
     void ProfPreForInstrProf(const std::function<bool(void)> &func,const std::function<void(const std::string &)> &bbCountTask, rtStream_t stream);
- 	uint64_t PrepareDbiTaskForInstrProf(uint8_t mode, uint8_t *&memInfo);
+ 	bool PrepareDbiTaskForInstrProf(ProfDBIType mode, uint64_t memSize);
     void DoOperandRecord();
     void ProfPost();
     void SanitizerPre();
@@ -550,7 +551,7 @@ private:
                  const std::function<void(const std::string &)> &bbCountTask, aclrtStream stm);
     void DoOperandRecord();
     void ProfPreForInstrProf(const std::function<bool(void)> &func,const std::function<void(const std::string &)> &bbCountTask, rtStream_t stream);
- 	uint64_t PrepareDbiTaskForInstrProf(uint8_t mode, uint8_t *&memInfo);
+ 	bool PrepareDbiTaskForInstrProf(ProfDBIType mode, uint64_t memSize);
 
     void SanitizerPre();
     void SanitizerPost();

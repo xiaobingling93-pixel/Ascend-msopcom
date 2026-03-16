@@ -26,6 +26,7 @@
 #include "core/HijackedFuncTemplate.h"
 #include "runtime/inject_helpers/ProfDataCollect.h"
 #include "runtime/RuntimeOrigin.h"
+#include "runtime/inject_helpers/ProfConfig.h"
 
 template <>
 struct EmptyFuncError<rtError_t> {
@@ -94,7 +95,7 @@ private:
     void ProfPre(const std::function<bool(void)> &func,
                  const std::function<void(const std::string &)> &bbCountTask, rtStream_t stm);
     void SanitizerPre();
-    uint64_t PrepareDbiTaskForInstrProf(uint8_t mode, uint8_t *&memInfo);
+    bool PrepareDbiTaskForInstrProf(ProfDBIType mode, uint64_t memSize);
     void ProfPost();
     void SanitizerPost() const;
     void ProfPreForInstrProf(const std::function<bool(void)> &func, const std::function<void(const std::string &)> &bbCountTask, rtStream_t stm);
@@ -140,7 +141,7 @@ private:
                  const std::function<void(const std::string &)> &bbCountTask, rtStream_t stm);
     void ProfPreForInstrProf(const std::function<bool(void)> &func,
                              const std::function<void(const std::string &)> &bbCountTask, rtStream_t stm);
-    uint64_t PrepareDbiTaskForInstrProf(uint8_t mode, uint8_t *&memInfo);
+    bool PrepareDbiTaskForInstrProf(ProfDBIType mode, uint64_t memSize);
     void SanitizerPre();
 
     void ProfPost();
@@ -194,7 +195,7 @@ private:
     void ProfPre(const std::function<bool(void)> &func,
                  const std::function<void(const std::string &)> &bbCountTask, rtStream_t stm);
     void ProfPreForInstrProf(const std::function<bool(void)> &func, const std::function<void(const std::string &)> &bbCountTask, rtStream_t stm);
-    uint64_t PrepareDbiTaskForInstrProf(uint8_t mode, uint8_t *&memInfo);
+    bool PrepareDbiTaskForInstrProf(ProfDBIType mode, uint64_t memSize);
     void SanitizerPre();
 
     void ProfPost();

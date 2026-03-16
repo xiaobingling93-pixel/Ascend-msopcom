@@ -151,15 +151,9 @@ void HijackedFuncOfKernelLaunchWithFlagV2::ProfPost()
         }
     }
     if (profObj_->IsMemoryChartNeedGen()) {
-        ProfConfig::Instance().RestoreMemoryByMode();
         rtStreamSynchronizeOrigin(stm_);
-        refreshParamFunc_();
-        memSize_ = BLOCK_MEM_SIZE * GetCoreNumForDbi(blockDim_);
-        std::string path = GetEnv(DEVICE_PROF_DUMP_PATH_ENV);
-        DBITaskConfig::Instance().Init(BIType::CUSTOMIZE, ProfConfig::Instance().GetPluginPath(), {}, path);
-        memInfo_ = InitMemory(memSize_);
-        if (ExpandArgs(&newArgsInfo_, argsVec_, memInfo_, hostInput_, DBITaskConfig::Instance().argsSize_) &&
-            RunDBITask(&this->stubFunc_) && originfunc_ != nullptr) {
+        uint64_t memSize = BLOCK_MEM_SIZE * GetCoreNumForDbi(blockDim_);
+        if (PrepareDbiTaskForInstrProf(ProfDBIType::MEMORY_CHART, memSize) && originfunc_ != nullptr) {
             originfunc_(stubFunc_, blockDim_, &newArgsInfo_, smDesc_, stm_, flags_, cfgInfo_);
             rtError_t memchartLaunchRet = rtStreamSynchronizeOrigin(this->stm_);
             if (memchartLaunchRet != RT_ERROR_NONE) {
@@ -172,15 +166,9 @@ void HijackedFuncOfKernelLaunchWithFlagV2::ProfPost()
     std::string socVersion = DeviceContext::Local().GetSocVersion();
     if (profObj_->IsOperandRecordNeedGen(socVersion)) {
         rtStreamSynchronizeOrigin(stm_);
-        refreshParamFunc_();
         uint64_t sizePerAllType = static_cast<uint32_t>(OperandType::END) * sizeof(OperandRecord) + SIMT_THREAD_GAP;
-        memSize_ = sizeof(OperandHeader) + (sizePerAllType * (MAX_THREAD_NUM + 1) + BLOCK_GAP) * GetCoreNumForDbi(blockDim_);
-        std::string path = GetEnv(DEVICE_PROF_DUMP_PATH_ENV);
-        DBITaskConfig::Instance().Init(BIType::CUSTOMIZE,
-            ProfConfig::Instance().GetPluginPath(ProfDBIType::OPERAND_RECORD), {}, path);
-        memInfo_ = InitMemory(memSize_);
-        if (ExpandArgs(&newArgsInfo_, argsVec_, memInfo_, hostInput_, DBITaskConfig::Instance().argsSize_) &&
-            RunDBITask(&this->stubFunc_) && originfunc_ != nullptr) {
+        uint64_t memSize = sizeof(OperandHeader) + (sizePerAllType * (MAX_THREAD_NUM + 1) + BLOCK_GAP) * GetCoreNumForDbi(blockDim_);
+        if (PrepareDbiTaskForInstrProf(ProfDBIType::OPERAND_RECORD, memSize) && originfunc_ != nullptr) {
             originfunc_(stubFunc_, blockDim_, &newArgsInfo_, smDesc_, stm_, flags_, cfgInfo_);
             rtError_t opRecordLaunchRet = rtStreamSynchronizeOrigin(this->stm_);
             if (opRecordLaunchRet != RT_ERROR_NONE) {
@@ -202,23 +190,21 @@ void HijackedFuncOfKernelLaunchWithFlagV2::ProfPreForInstrProf(const std::functi
                                                 this->stm_, this->flags_, this->cfgInfo_) == RT_ERROR_NONE);
     };
     if (ProfConfig::Instance().IsPCSamplingEnabled() && KernelContext::Instance().HasSimtSymbol()) {
-        uint8_t *memInfo = nullptr;
-        uint64_t memSize = PrepareDbiTaskForInstrProf(INSTR_PROF_MODE_PC_SAMPLING, memInfo);
-
-        KernelContext::StubFuncPtr stubFuncPtr{this->stubFunc_};
-        uint64_t kernelAddr;
-        if (!KernelContext::Instance().GetDeviceContext().GetKernelAddr(
-            KernelContext::StubFuncArgs{stubFuncPtr.value, nullptr}, kernelAddr)) {
-            WARN_LOG("Can not get kernel addr for kernel start stub");
+        if (PrepareDbiTaskForInstrProf(ProfDBIType::INSTR_PROF_START, INSTR_PROF_MEMSIZE)) {
+            KernelContext::StubFuncPtr stubFuncPtr{this->stubFunc_};
+            uint64_t kernelAddr;
+            if (!KernelContext::Instance().GetDeviceContext().GetKernelAddr(
+                KernelContext::StubFuncArgs{stubFuncPtr.value, nullptr}, kernelAddr)) {
+                WARN_LOG("Can not get kernel addr for kernel start stub");
+            }
+            WriteStringToFile(JoinPath({ProfDataCollect::GetAicoreOutputPath(devId_), "pc_start_pcsampling.txt"}),
+                NumToHexString(kernelAddr), std::fstream::out | std::fstream::binary);
+            profObj_->InstrProfData(stm, funcStub);
+            profObj_->GenRecordData(memSize_, memInfo_, PCOFFSET_RECORD);
         }
-        WriteStringToFile(JoinPath({ProfDataCollect::GetAicoreOutputPath(devId_), "pc_start_pcsampling.txt"}),
-            NumToHexString(kernelAddr), std::fstream::out | std::fstream::binary);
-        profObj_->InstrProfData(stm, funcStub);
-        profObj_->GenRecordData(memSize, memInfo, PCOFFSET_RECORD);
     }
     if (ProfConfig::Instance().IsTimelineEnabled()) {
-        uint8_t *memInfo = nullptr;
-        PrepareDbiTaskForInstrProf(INSTR_PROF_MODE_BIU_PERF, memInfo);
+        PrepareDbiTaskForInstrProf(ProfDBIType::INSTR_PROF_END, INSTR_PROF_MEMSIZE);
         ProfPre(funcStub, bbCountTask, stm);
     } else {
         ProfPre(func, bbCountTask, stm);
@@ -263,25 +249,25 @@ void HijackedFuncOfKernelLaunchWithFlagV2::Pre(const void *stubFunc, uint32_t bl
     }
 }
 
-// timeline 以及 pcsampling功能需要插end 和 start桩
-uint64_t HijackedFuncOfKernelLaunchWithFlagV2::PrepareDbiTaskForInstrProf(uint8_t mode, uint8_t *&memInfo)
+// 调优自定义插桩统一调用此函数 
+bool HijackedFuncOfKernelLaunchWithFlagV2::PrepareDbiTaskForInstrProf(ProfDBIType mode, uint64_t memSize)
 {
+    // 每次调用插桩前需要清理插桩用到的成员变量，保证不被上次插桩污染
     refreshParamFunc_();
-    uint64_t memSize = INSTR_PROF_MEMSIZE;
     KernelMatcher::Config matchConfig;
     std::string path = GetEnv(DEVICE_PROF_DUMP_PATH_ENV);
-    std::string pluginPath = mode == INSTR_PROF_MODE_BIU_PERF ?
-            ProfConfig::Instance().GetPluginPath(ProfDBIType::INSTR_PROF_END) :
-            ProfConfig::Instance().GetPluginPath(ProfDBIType::INSTR_PROF_START);
-    std::vector<std::string> extraArgs = mode == INSTR_PROF_MODE_BIU_PERF ? std::vector<std::string>() :
-        std::vector<std::string>{START_STUB_COMPILER_ARGS};   
+    std::string pluginPath = ProfConfig::Instance().GetPluginPath(mode);
+    std::vector<std::string> extraArgs = (mode == ProfDBIType::INSTR_PROF_START) ? std::vector<std::string>{START_STUB_COMPILER_ARGS} :
+        std::vector<std::string>();
     DBITaskConfig::Instance().Init(BIType::CUSTOMIZE, pluginPath, matchConfig, path, extraArgs);
-    memInfo = InitMemory(memSize);
-    if (!ExpandArgs(&this->newArgsInfo_, this->argsVec_, memInfo, hostInput_, DBITaskConfig::Instance().argsSize_) ||
+    memSize_ = memSize;
+    memInfo_ = InitMemory(memSize_);
+    if (!ExpandArgs(&this->newArgsInfo_, this->argsVec_, memInfo_, hostInput_, DBITaskConfig::Instance().argsSize_) ||
         !RunDBITask(&this->stubFunc_)) {
-        ERROR_LOG("End or start stub run failed.");
+        ERROR_LOG("Stub run failed, dbi mode is %d", static_cast<uint32_t>(mode));
+        return false;
     }
-    return memSize;
+    return true;
 }
 
 rtError_t HijackedFuncOfKernelLaunchWithFlagV2::Call(const void *stubFunc, uint32_t blockDim, rtArgsEx_t *argsInfo,
