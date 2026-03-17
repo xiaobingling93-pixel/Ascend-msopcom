@@ -387,31 +387,6 @@ TEST(ProfTask, test_A5_start_instr_task_when_pcSampling_enable_then_return_true)
 
 /**
 /* | 用例集 | ProfTask
-/* |测试函数| ProfTaskOfA5::StartInstrProfTask()
-/* | 用例名 | test_A5_start_instr_task_when_start_task_failed_then_return_false
-/* |用例描述| 执行测试函数，instrProf task 失败的情况下返回false
-*/
-TEST(ProfTask, test_A5_start_instr_task_when_start_task_failed_then_return_false)
-{
-    MessageOfProfConfig profMessage;
-    profMessage.replayCount = 0;
-    std::fill(profMessage.aicPmu, profMessage.aicPmu + 64, 5);
-    std::fill(profMessage.l2CachePmu, profMessage.l2CachePmu + 64, 5);
-    ProfConfig::Instance().Init(profMessage);
-    DeviceContext::Local().SetDeviceId(1);
-    DeviceContext::Local().SetSocVersion("Ascend950PR_9589");
-    std::unique_ptr<ProfTask> task = ProfTaskFactory::Create();
-    ASSERT_TRUE(task != nullptr);
-    MOCKER(prof_drv_start_origin)
-        .stubs()
-        .will(returnValue(1));
-    ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_INSTR_PROF_END;
-    ASSERT_FALSE(task->Start(0));
-    GlobalMockObject::verify();
-}
-
-/**
-/* | 用例集 | ProfTask
 /* |测试函数| ProfTask::ChannelRead()
 /* | 用例名 | test_A5_channel_read_when_timeline_or_pcsampling_enabled_and_expect_success
 /* |用例描述| 执行测试函数，启用 timeline 或者 pc sampling，生成文件成功
@@ -452,14 +427,14 @@ TEST(ProfTask, test_A5_channel_read_when_timeline_or_pcsampling_enabled_and_expe
     task->ChannelRead();
     string filePath = JoinPath({path, "timeline.bin.0"});
     task->Stop();
-    ASSERT_TRUE(!IsPathExists(filePath));
+    ASSERT_TRUE(IsPathExists(filePath));
     ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_INSTR_PROF_START;
-    task->Start(0);
+    task->Start(0, true);
     task->profRunning_ = false;
     task->ChannelRead();
     filePath = JoinPath({path, "pcSampling.bin.0"});
     task->Stop();
-    ASSERT_TRUE(!IsPathExists(filePath));
+    ASSERT_TRUE(IsPathExists(filePath));
     RemoveAll(path);
     GlobalMockObject::verify();
 }

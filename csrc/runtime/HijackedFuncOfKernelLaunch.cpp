@@ -112,10 +112,9 @@ void HijackedFuncOfKernelLaunch::ProfPreForInstrProf(const std::function<bool(vo
     }
     if (ProfConfig::Instance().IsTimelineEnabled()) {
         PrepareDbiTaskForInstrProf(ProfDBIType::INSTR_PROF_END, INSTR_PROF_MEMSIZE);
-        ProfPre(funcStub, bbCountTask, stm);
-    } else {
-        ProfPre(func, bbCountTask, stm);
+        profObj_->InstrProfData(stm, funcStub);
     }
+    ProfPre(func, bbCountTask, stm);
 }
 
 void HijackedFuncOfKernelLaunch::ProfPre(const std::function<bool(void)> &func,

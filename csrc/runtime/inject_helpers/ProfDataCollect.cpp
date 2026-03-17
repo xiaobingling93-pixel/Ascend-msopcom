@@ -1110,7 +1110,7 @@ bool DataCollectInDevice::InstrProfData(rtStream_t stream, const std::function<b
     if (ProfConfig::Instance().IsRangeReplay()) {
         return false;
     }
-    DEBUG_LOG("Kernel running for pcSampling, kernel name is %s", kernelName_.c_str());
+    DEBUG_LOG("Kernel running for instr prof, kernel name is %s", kernelName_.c_str());
     if (outputPath_.empty()) {
         return true;
     }
@@ -1123,7 +1123,7 @@ bool DataCollectInDevice::InstrProfData(rtStream_t stream, const std::function<b
         INFO_LOG("memoryContext failed!");
         return false;
     }
-    DEBUG_LOG("Start Instr profiling on device %d, kernel: %s", deviceId_, kernelName_.c_str());
+    DEBUG_LOG("Start instr profiling on device %d, kernel: %s", deviceId_, kernelName_.c_str());
     aclrtSynchronizeStreamImplOrigin(stream);
     auto ret = KernelLaunchForInstrProf(stream, kernelLaunchFunc);
     return ret;

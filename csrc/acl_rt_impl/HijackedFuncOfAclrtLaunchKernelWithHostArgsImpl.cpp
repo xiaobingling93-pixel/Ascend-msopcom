@@ -189,6 +189,9 @@ void HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl::ProfPreForInstrProf(const 
         if (PrepareDbiTaskForInstrProf(ProfDBIType::INSTR_PROF_START, INSTR_PROF_MEMSIZE)) {
             profObj_->InstrProfData(stream, funcStub);
             profObj_->GenRecordData(memSize_, memInfo_, PCOFFSET_RECORD);
+        }
+        if (launchCtx_->GetDBIFuncCtx() == nullptr) {
+            WARN_LOG("Failed to get pcsampling start pc");
         } else {
             auto kernelAddr = launchCtx_->GetDBIFuncCtx()->GetKernelPC();
             WriteStringToFile(JoinPath({ProfDataCollect::GetAicoreOutputPath(devId_), "pc_start_pcsampling.txt"}),
@@ -197,10 +200,9 @@ void HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl::ProfPreForInstrProf(const 
     }
     if (ProfConfig::Instance().IsTimelineEnabled()) {
         PrepareDbiTaskForInstrProf(ProfDBIType::INSTR_PROF_END, INSTR_PROF_MEMSIZE);
-        ProfPre(funcStub, bbCountTask, stream);
-    } else {
-        ProfPre(func, bbCountTask, stream);
+        profObj_->InstrProfData(stream, funcStub);
     }
+    ProfPre(func, bbCountTask, stream);
 }
 
 void HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl::Pre(aclrtFuncHandle funcHandle, uint32_t blockDim,

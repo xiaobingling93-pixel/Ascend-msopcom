@@ -179,7 +179,7 @@ private:
         const char *data, int validLen, InstrChnReadCtrl &instrChnReadController) override;
     bool StartInstrProfTask(int mode);
     std::map<InstrChannel, InstrProfChnInfo> instrProfChn_;
-    std::atomic<bool> timelineEnable_ {false};
+    std::atomic<bool> timelineFinish_ {false};
     std::atomic<bool> pcSamplingFinish_ {false};
 private:
     bool isStarsStart_ = false;
@@ -600,10 +600,10 @@ bool ProfTaskOfA5::WriteInstrChannelData(const std::string &prefixName, InstrCha
         instrChnReadController.InstrProfReadSize = 0;
     }
     std::string binName;
-    if (timelineEnable_) {
-        binName = "timeline.bin." + std::to_string(instrChnReadController.splitFileNum);
-    } else if (ProfConfig::Instance().IsPCSamplingEnabled() && isSimt_ && !pcSamplingFinish_) {
+    if (ProfConfig::Instance().IsPCSamplingEnabled() && isSimt_ && !pcSamplingFinish_) {
         binName = "pcSampling.bin." + std::to_string(instrChnReadController.splitFileNum);
+    } else if (ProfConfig::Instance().IsTimelineEnabled() && !timelineFinish_) {
+        binName = "timeline.bin." + std::to_string(instrChnReadController.splitFileNum);
     } else {
         return true;
     }
@@ -699,16 +699,11 @@ bool ProfTaskOfA5::Start(uint32_t replayCount, bool isSimt)
     if (ProfConfig::Instance().IsPCSamplingEnabled() && isSimt_ && !pcSamplingFinish_) {
         return StartInstrProfTask(INSTR_PROF_MODE_PC_SAMPLING);
     }
+    if (ProfConfig::Instance().IsTimelineEnabled() && !timelineFinish_) {
+        return StartInstrProfTask(INSTR_PROF_MODE_BIU_PERF);
+    }
     if (!StartFFTSTask(replayCount)) {
         return false;
-    }
-
-    // Biu Perf 和 PCSampling 共用通道，在2次重放中采集且只采1次
-    if (ProfConfig::Instance().IsTimelineEnabled() && !timelineEnable_ && isLastReplay_) {
-        timelineEnable_ = true;
-        if (!StartInstrProfTask(INSTR_PROF_MODE_BIU_PERF)) {
-            return false;
-        }
     }
 
     // save the last replay duration.bin
@@ -724,16 +719,16 @@ void ProfTaskOfA5::Stop()
     if (isStarsStart_) {
         prof_stop_origin(deviceId_, CHANNEL_STARS_SOC_LOG_BUFFER);
     }
-    if (timelineEnable_) {
-        for (auto const &it : instrProfChn_) {
-            prof_stop_origin(deviceId_, static_cast<uint32_t>(it.first));
-        }
-        timelineEnable_ = false;
-    } else if (!pcSamplingFinish_) {
+    if (ProfConfig::Instance().IsPCSamplingEnabled() && !pcSamplingFinish_) {
         for (auto const &it : instrProfChn_) {
             prof_stop_origin(deviceId_, static_cast<uint32_t>(it.first));
         }
         pcSamplingFinish_ = true;
+    } else if (ProfConfig::Instance().IsTimelineEnabled() && !timelineFinish_) {
+        for (auto const &it : instrProfChn_) {
+            prof_stop_origin(deviceId_, static_cast<uint32_t>(it.first));
+        }
+        timelineFinish_ = true;
     }
     profRunning_ = false;
 }
