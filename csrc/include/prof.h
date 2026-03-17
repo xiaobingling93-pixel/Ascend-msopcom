@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 static const int PROF_ERROR_INTERNAL_ERROR = 500000;
+constexpr int32_t MSOPPROF_FUNC_REGISTER_SUCCESS = 0;
 
 using VOID_PTR = void *;
 using ProfCommandHandle = int32_t (*)(uint32_t type, void *data, uint32_t len);
@@ -103,10 +104,32 @@ enum MsprofCommandHandleType {
     PROF_COMMANDHANDLE_TYPE_MAX
 };
 
+enum class ProfilerCallbackType : uint32_t {
+    PROFILE_CTRL_CALLBACK = 0,
+    PROFILE_DEVICE_STATE_CALLBACK,
+    PROFILE_REPORT_API_CALLBACK,
+    PROFILE_REPORT_EVENT_CALLBACK,
+    PROFILE_REPORT_COMPACT_CALLBACK = 4,
+    PROFILE_REPORT_ADDITIONAL_CALLBACK = 5,
+    PROFILE_REPORT_REG_TYPE_INFO_CALLBACK,
+    PROFILE_REPORT_GET_HASH_ID_CALLBACK,
+    PROFILE_HOST_FREQ_IS_ENABLE_CALLBACK,
+    PROFILE_REPORT_API_C_CALLBACK,
+    PROFILE_REPORT_EVENT_C_CALLBACK,
+    PROFILE_REPORT_REG_TYPE_INFO_C_CALLBACK,
+    PROFILE_REPORT_GET_HASH_ID_C_CALLBACK,
+    PROFILE_HOST_FREQ_IS_ENABLE_C_CALLBACK,
+    PROFILE_REPORT_REG_DATA_FORMAT_CALLBACK,
+    PROFILE_REPORT_REG_DATA_FORMAT_C_CALLBACK,
+    PROFILE_DEVICE_STATE_C_CALLBACK,
+};
+
 int32_t MsprofRegisterCallback(uint32_t moduleId, ProfCommandHandle handle);
 int32_t MsprofReportAdditionalInfo(uint32_t agingFlag, const VOID_PTR data, uint32_t length);
 int32_t MsprofNotifySetDevice(uint32_t chipId, uint32_t deviceId, bool isOpen);
 int32_t profSetProfCommand(VOID_PTR command, uint32_t len);
+int32_t MsprofReportCompactInfo(uint32_t agingFlag, const VOID_PTR data, uint32_t length);
+int32_t MsprofRegisterProfileCallback(uint32_t callbackType, VOID_PTR callback, uint32_t len);
 #ifdef __cplusplus
 } // extern "C"
 #endif

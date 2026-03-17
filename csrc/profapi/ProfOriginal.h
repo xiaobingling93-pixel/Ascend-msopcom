@@ -23,4 +23,6 @@
 
 int32_t profSetProfCommandOrigin(VOID_PTR command, uint32_t len);
 
+int32_t MsprofRegisterProfileCallbackOrigin(uint32_t callbackType, VOID_PTR callback, uint32_t len);
+
 #endif // MSOPT_PROFORIGINAL_H

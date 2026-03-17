@@ -28,67 +28,63 @@
 #include "runtime/inject_helpers/ProfDataCollect.h"
 #include "utils/FileSystem.h"
 #include "include/prof.h"
-
+#include "profapi/RegisterMsopprofProfileCallback.h"
 /**
- * |  用例集 | HijackedFuncOfMsprofReportAdditionalInfoTest
- * | 测试函数 | HijackedFuncOfMsprofReportAdditionalInfoTest::Pre
+ * |  用例集 | MsprofReportAdditionalInfoCallbackImpl
+ * | 测试函数 | MsprofReportAdditionalInfoCallbackImpl
  * |  用例名 | write_aicore_timestamp_bin_success
  * | 用例描述 | 测试aicore打点数据写入aic_timestamp.bin成功
  */
-TEST(HijackedFuncOfMsprofReportAdditionalInfoTest, write_aicore_timestamp_bin_success)
+TEST(MsprofReportAdditionalInfoCallbackImpl, write_aicore_timestamp_bin_success)
 {
     FuncSelector::Instance()->Set(ToolType::PROF);
     MOCKER(rtGetDeviceOrigin).stubs().will(returnValue(1));
     std::string path = "./output";
     ASSERT_TRUE(MkdirRecusively(path));
-    MOCKER(&ProfDataCollect::GetAicoreOutputPath).stubs().will(returnValue(path));
+    MOCKER(&ProfDataCollect::GetTimeStampDeviceOutputPath).stubs().will(returnValue(path));
     MOCKER(&KernelContext::GetMC2Flag).stubs().will(returnValue(true));
 
-    HijackedFuncOfMsprofReportAdditionalInfo instance;
     MsprofAdditionalInfo tempdata;
     tempdata.level = 3000;
     tempdata.type = 0;
     VOID_PTR data = &tempdata;
-    instance.Pre(1, data, 0);
+    MsprofReportAdditionalInfoCallbackImpl(1, data, 0);
     ASSERT_TRUE(IsPathExists("./output/aic_timestamp.bin"));
     RemoveAll(path);
     GlobalMockObject::verify();
 }
 
 /**
- * |  用例集 | HijackedFuncOfMsprofReportAdditionalInfoTest
- * | 测试函数 | HijackedFuncOfMsprofReportAdditionalInfoTest::Pre
+ * |  用例集 | MsprofReportAdditionalInfoCallbackImpl
+ * | 测试函数 | MsprofReportAdditionalInfoCallbackImpl
  * |  用例名 | output_path_empty_do_not_write_bim
  * | 用例描述 | 测试output为空无需写入bin文件
  */
-TEST(HijackedFuncOfMsprofReportAdditionalInfoTest, output_path_empty_do_not_write_bim)
+TEST(MsprofReportAdditionalInfoCallbackImpl, output_path_empty_do_not_write_bim)
 {
     FuncSelector::Instance()->Set(ToolType::PROF);
     MOCKER(rtGetDeviceOrigin).stubs().will(returnValue(1));
-
-    HijackedFuncOfMsprofReportAdditionalInfo instance;
     MsprofAdditionalInfo tempdata;
     VOID_PTR data = &tempdata;
-    instance.Pre(1, data, 0);
+    MsprofReportAdditionalInfoCallbackImpl(1, data, 0);
     ASSERT_FALSE(IsPathExists("./output/mc2_aic_timestamp.bin"));
     GlobalMockObject::verify();
 }
 
 /**
- * |  用例集 | HijackedFuncOfMsprofReportAdditionalInfoTest
- * | 测试函数 | HijackedFuncOfMsprofReportAdditionalInfoTest::Pre
+ * |  用例集 | MsprofReportAdditionalInfoCallbackImpl
+ * | 测试函数 | MsprofReportAdditionalInfoCallbackImpl
  * |  用例名 | not_opprof_do_not_write_bin
  * | 用例描述 | 测试非OpProf情况下无需写入bin文件
  */
-TEST(HijackedFuncOfMsprofReportAdditionalInfoTest, not_opprof_do_not_write_bin)
+TEST(MsprofReportAdditionalInfoCallbackImpl, not_opprof_do_not_write_bin)
 {
     FuncSelector::Instance()->Set(ToolType::NONE);
     MOCKER(rtGetDeviceOrigin).stubs().will(returnValue(1));
 
-    HijackedFuncOfMsprofReportAdditionalInfo instance;
     MsprofAdditionalInfo tempdata;
     VOID_PTR data = &tempdata;
-    instance.Pre(1, data, 0);
+    MsprofReportAdditionalInfoCallbackImpl(1, data, 0);
     ASSERT_FALSE(IsPathExists("./output/mc2_aic_timestamp.bin"));
     GlobalMockObject::verify();
 }

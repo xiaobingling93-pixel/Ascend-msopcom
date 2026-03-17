@@ -1,7 +1,7 @@
 file(GLOB INJECTION_SRC
     HijackedFuncOfMsprofNotifySetDevice.cpp
     HijackedFuncOfMsprofRegisterCallback.cpp
-    HijackedFuncOfMsprofReportAdditionalInfo.cpp
+    RegisterMsopprofProfileCallback.cpp
     ProfOriginal.cpp
 )
 

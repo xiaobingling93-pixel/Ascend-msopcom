@@ -44,13 +44,6 @@ public:
     void Pre(uint32_t moduleId, ProfCommandHandle handle) override;
 };
 
-class HijackedFuncOfMsprofReportAdditionalInfo : public decltype(ProfHijackedType(&MsprofReportAdditionalInfo)) {
-public:
-    explicit HijackedFuncOfMsprofReportAdditionalInfo();
-    ~HijackedFuncOfMsprofReportAdditionalInfo() override = default;
-    void Pre(uint32_t agingFlag, const VOID_PTR data, uint32_t length) override;
-};
-
 class HijackedFuncOfMsprofNotifySetDevice : public decltype(ProfHijackedType(&MsprofNotifySetDevice)) {
 public:
     explicit HijackedFuncOfMsprofNotifySetDevice();

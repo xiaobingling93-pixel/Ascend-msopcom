@@ -40,7 +40,7 @@
 #include "acl_rt_impl/HijackedFunc.h"
 #include "profapi/ProfOriginal.h"
 #include "ascend_hal/AscendHalOrigin.h"
-
+#include "profapi/RegisterMsopprofProfileCallback.h"
 static bool g_isCtorDone = false;
 
 #define PRINT_ENTER_INSTRUMENTOR DEBUG_LOG("enter %s", __FUNCTION__)
@@ -63,8 +63,10 @@ void RegisterProfApi()
     REGISTER_LIBRARY(soName);
     REGISTER_FUNCTION(soName, MsprofRegisterCallback);
     REGISTER_FUNCTION(soName, MsprofReportAdditionalInfo);
+    REGISTER_FUNCTION(soName, MsprofReportCompactInfo);
     REGISTER_FUNCTION(soName, MsprofNotifySetDevice);
     REGISTER_FUNCTION(soName, profSetProfCommand);
+    REGISTER_FUNCTION(soName, MsprofRegisterProfileCallback);
 }
 
 void RegisterAscendDump()
@@ -176,6 +178,7 @@ void __attribute__ ((constructor)) HijackedCtor()
         CamodelCtor();
     }
     g_isCtorDone = true;
+    RegisterMsopprofProfileCallback::Instance()->RegisterFuncMsprof();
 }
 
 using namespace MstxAPI;
@@ -732,15 +735,6 @@ int32_t MsprofRegisterCallback(uint32_t moduleId, ProfCommandHandle handle)
     }
     HijackedFuncOfMsprofRegisterCallback instance;
     return instance.Call(moduleId, handle);
-}
-
-int32_t MsprofReportAdditionalInfo(uint32_t agingFlag, const VOID_PTR data, uint32_t length)
-{
-    if (!g_isCtorDone) {
-        HijackedCtor();
-    }
-    HijackedFuncOfMsprofReportAdditionalInfo instance;
-    return instance.Call(agingFlag, data, length);
 }
 
 int32_t MsprofNotifySetDevice(uint32_t chipId, uint32_t deviceId, bool isOpen)

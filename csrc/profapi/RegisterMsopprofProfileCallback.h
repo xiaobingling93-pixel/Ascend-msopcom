@@ -14,17 +14,26 @@
  * See the Mulan PSL v2 for more details.
  * ------------------------------------------------------------------------- */
 
+
+#ifndef MSOPT_REGISTER_MSOPPROF_FUNC_H
+#define MSOPT_REGISTER_MSOPPROF_FUNC_H
+
+#include <map>
+#include "include/prof.h"
 #include "ProfOriginal.h"
 
-#define LOAD_FUNCTION_BODY(soName, funcName, ...)                           \
-    FUNC_BODY(soName, funcName, Origin, PROF_ERROR_INTERNAL_ERROR, __VA_ARGS__)
+int32_t MsprofCompactInfoReportCallbackImpl(uint32_t agingFlag, const VOID_PTR data, uint32_t len);
 
-int32_t profSetProfCommandOrigin(VOID_PTR command, uint32_t len)
-{
-    LOAD_FUNCTION_BODY("profapi", profSetProfCommand, command, len);
-}
+int32_t MsprofReportAdditionalInfoCallbackImpl(uint32_t agingFlag, const VOID_PTR data, uint32_t len);
 
-int32_t MsprofRegisterProfileCallbackOrigin(uint32_t callbackType, VOID_PTR callback, uint32_t len)
-{
-    LOAD_FUNCTION_BODY("profapi", MsprofRegisterProfileCallback, callbackType, callback, len);
-}
+class RegisterMsopprofProfileCallback {
+public:
+    static RegisterMsopprofProfileCallback *Instance();
+    ~RegisterMsopprofProfileCallback();
+    void RegisterFuncMsprof();
+private:
+    std::map<uint32_t, VOID_PTR> callBackFuncMap;
+    bool register_ = false;
+};
+
+#endif // MSOPT_REGISTER_MSOPPROF_FUNC_H
