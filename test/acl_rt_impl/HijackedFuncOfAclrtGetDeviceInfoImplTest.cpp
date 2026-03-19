@@ -35,18 +35,23 @@ using namespace std;
 class HijackedFuncOfAclrtGetDeviceInfoImplTest : public ContextMockHelper {
 };
 
-TEST_F(HijackedFuncOfAclrtGetDeviceInfoImplTest, prof_simulator_get_device_info_suc)
+TEST_F(HijackedFuncOfAclrtGetDeviceInfoImplTest, prof_simulator_get_device_info_success)
 {
     HijackedFuncOfAclrtGetDeviceInfoImpl inst;
     FuncSelector::Instance()->Set(ToolType::PROF);
     ProfConfig::Instance().profConfig_.isSimulator = true;
     int64_t value;
-    aclrtDevAttr attr = ACL_DEV_ATTR_AICORE_CORE_NUM;
     ProfConfig::Instance().socVersion_ = "Ascend910B1";
+    ASSERT_EQ(inst.Call(0, ACL_DEV_ATTR_AICORE_CORE_NUM, &value), ACL_SUCCESS);
+    ASSERT_EQ(value, 24);
+    ASSERT_EQ(inst.Call(0, ACL_DEV_ATTR_VECTOR_CORE_NUM, &value), ACL_SUCCESS);
+    ASSERT_EQ(value, 48);
 
-    ASSERT_EQ(inst.Call(0, attr, &value), ACL_SUCCESS);
-    attr = ACL_DEV_ATTR_VECTOR_CORE_NUM;
-    ASSERT_EQ(inst.Call(0, attr, &value), ACL_SUCCESS);
+    ProfConfig::Instance().socVersion_ = "Ascend950PR_9599";
+    ASSERT_EQ(inst.Call(0, ACL_DEV_ATTR_AICORE_CORE_NUM, &value), ACL_SUCCESS);
+    ASSERT_EQ(value, 36);
+    ASSERT_EQ(inst.Call(0, ACL_DEV_ATTR_VECTOR_CORE_NUM, &value), ACL_SUCCESS);
+    ASSERT_EQ(value, 72);
     FuncSelector::Instance()->Set(ToolType::NONE);
     ProfConfig::Instance().profConfig_.isSimulator = false;
 }

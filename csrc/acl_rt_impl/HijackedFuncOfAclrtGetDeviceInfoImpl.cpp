@@ -33,14 +33,13 @@ aclError HijackedFuncOfAclrtGetDeviceInfoImpl::Call(uint32_t deviceId, aclrtDevA
     if (IsOpProf() && ProfConfig::Instance().IsSimulator()) {
         deviceId = 0;
         std::string simSocVersion = ProfConfig::Instance().GetSocVersion();
-        if (CUBE_NUM_OF_A2_A3.count(simSocVersion) != 0 && VEC_NUM_OF_A2_A3.count(simSocVersion) != 0
-            && value != nullptr) {
+        if (CORE_NUM.count(simSocVersion) != 0 && value != nullptr) {
             if (attr == static_cast<int32_t>(ACL_DEV_ATTR_AICORE_CORE_NUM)) {
-                *value = CUBE_NUM_OF_A2_A3.at(simSocVersion);
+                *value = CORE_NUM.at(simSocVersion);
                 return ACL_SUCCESS;
             }
             if (attr == static_cast<int32_t>(ACL_DEV_ATTR_VECTOR_CORE_NUM)) {
-                *value = VEC_NUM_OF_A2_A3.at(simSocVersion);
+                *value = CORE_NUM.at(simSocVersion) * 2;
                 return ACL_SUCCESS;
             }
         }

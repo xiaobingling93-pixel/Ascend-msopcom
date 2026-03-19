@@ -35,14 +35,13 @@ rtError_t HijackedFuncOfGetDeviceInfo::Call(uint32_t deviceId, int32_t moduleTyp
     if (IsOpProf() && ProfConfig::Instance().IsSimulator()) {
         deviceId = 0;
         std::string simSocVersion = ProfConfig::Instance().GetSocVersion();
-        if (CUBE_NUM_OF_A2_A3.count(simSocVersion) != 0 && VEC_NUM_OF_A2_A3.count(simSocVersion) != 0
-            && val != nullptr) {
+        if (CORE_NUM.count(simSocVersion) != 0 && val != nullptr) {
             if (moduleType == static_cast<int32_t>(tagRtDeviceModuleType::RT_MODULE_TYPE_AICORE)) {
-                *val = CUBE_NUM_OF_A2_A3.at(simSocVersion);
+                *val = CORE_NUM.at(simSocVersion);
                 return RT_ERROR_NONE;
             }
             if (moduleType == static_cast<int32_t>(tagRtDeviceModuleType::RT_MODULE_TYPE_VECTOR_CORE)) {
-                *val = VEC_NUM_OF_A2_A3.at(simSocVersion);
+                *val = CORE_NUM.at(simSocVersion) * 2;
                 return RT_ERROR_NONE;
             }
         }

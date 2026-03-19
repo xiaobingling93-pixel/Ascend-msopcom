@@ -65,6 +65,12 @@ TEST(rtGetAiCoreCount, call_function_in_prof_logical)
     uint32_t aiCoreCnt = 1;
     instance.Call(&aiCoreCnt);
     EXPECT_EQ(aiCoreCnt, 10);
+    ProfConfig::Instance().socVersion_ = "Ascend910B1";
+    instance.Call(&aiCoreCnt);
+    EXPECT_EQ(aiCoreCnt, 24);
+    ProfConfig::Instance().socVersion_ = "Ascend950PR_9599";
+    instance.Call(&aiCoreCnt);
+    EXPECT_EQ(aiCoreCnt, 36);
     ProfConfig::Instance().socVersion_ = "";
     GlobalMockObject::verify();
 }

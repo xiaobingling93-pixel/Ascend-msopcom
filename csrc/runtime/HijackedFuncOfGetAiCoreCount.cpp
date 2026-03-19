@@ -35,8 +35,8 @@ rtError_t HijackedFuncOfGetAiCoreCount::Call(uint32_t *aiCoreCnt)
             DEBUG_LOG("Replace AiCore count with [%" PRIu32 "]", *aiCoreCnt);
             return RT_ERROR_NONE;
         }
-        if (!simSocVersion.empty() && CUBE_NUM_OF_A2_A3.count(simSocVersion) != 0 && aiCoreCnt != nullptr) {
-            *aiCoreCnt = CUBE_NUM_OF_A2_A3.at(simSocVersion);
+        if (!simSocVersion.empty() && CORE_NUM.count(simSocVersion) != 0 && aiCoreCnt != nullptr) {
+            *aiCoreCnt = CORE_NUM.at(simSocVersion);
             DEBUG_LOG("Replace AiCore count with [%" PRIu32 "]", *aiCoreCnt);
             return RT_ERROR_NONE;
         }
