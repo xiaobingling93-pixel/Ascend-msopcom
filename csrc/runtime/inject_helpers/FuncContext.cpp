@@ -78,18 +78,32 @@ uint64_t FuncContext::GetStartPC() const
     return pcStartAddr;
 }
 
-KernelType FuncContext::GetKernelType(const std::string &kernelName) const
+KernelType FuncContext::GetKernelType() const
 {
-    if (regCtx_->KernelSymbolNameIsMix(kernelName)) {
-        return KernelType::MIX;
+    auto kernelType = MagicToKernelType(regCtx_->GetMagic());
+    if (kernelType != KernelType::MIX) {
+        return kernelType;
     }
-    aclrtKernelType kernelType{};
+
+    kernelType = GetKernelTypeFromRuntime();
+    if (kernelType == KernelType::AICPU) {
+        DEBUG_LOG("kernel name: %s is aicpu function", kernelName_.c_str());
+    } else if (kernelType == KernelType::INVALID) {
+        WARN_LOG("kernel name: %s is get kernel type failed, use default CUBE type", kernelName_.c_str());
+        kernelType = KernelType::AICUBE;
+    }
+    return kernelType;
+}
+
+KernelType FuncContext::GetKernelTypeFromRuntime() const
+{
     int64_t value;
     auto ret = aclrtGetFunctionAttributeImplOrigin(funcHandle_, aclrtFuncAttribute::ACL_FUNC_ATTR_KERNEL_TYPE, &value);
     if (ret != ACL_SUCCESS) {
         ERROR_LOG("get function kernel type failed, ret=%u", static_cast<uint32_t>(ret));
         return KernelType::INVALID;
     }
-    kernelType = static_cast<aclrtKernelType>(value);
-    return AclrtKernelTypeTrans(kernelType);
+    KernelType kernelType = AclrtKernelTypeTrans(static_cast<aclrtKernelType>(value));
+    DEBUG_LOG("get kernel type from aclrtGetFunctionAttribute: %u", static_cast<uint32_t>(kernelType));
+    return kernelType;
 }

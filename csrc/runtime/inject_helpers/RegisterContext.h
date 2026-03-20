@@ -59,6 +59,8 @@ uint64_t GetMetaSection(const rtDevBinary_t &binary, const std::string &kernelNa
 
 bool GetSimtSymbolFromBinary(const char *data, uint64_t length);
 
+KernelType MagicToKernelType(uint32_t magic);
+
 struct RegisterParam {
     uint64_t regId{0};
     uint32_t magic{0};

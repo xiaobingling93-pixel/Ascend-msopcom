@@ -40,6 +40,7 @@
 #include "utils/Protocol.h"
 #include "InteractHelper.h"
 #include "utils/Numeric.h"
+#include "utils/Ustring.h"
 
 namespace {
 std::mutex g_instrMutex;
@@ -84,23 +85,6 @@ inline bool HasSubBlocks(DeviceType deviceType)
 inline bool SupportSimt(DeviceType deviceType)
 {
     return IsC310Arch(deviceType);
-}
-
-inline KernelType MagicToKernelType(uint32_t magic)
-{
-    KernelType kernelType {KernelType::INVALID};
-    if (magic == RT_DEV_BINARY_MAGIC_ELF_AIVEC) {
-        kernelType = KernelType::AIVEC;
-    } else if (magic == RT_DEV_BINARY_MAGIC_ELF_AICUBE) {
-        kernelType = KernelType::AICUBE;
-    } else if (magic == RT_DEV_BINARY_MAGIC_ELF) {
-        kernelType = KernelType::MIX;
-    } else if (magic == RT_DEV_BINARY_MAGIC_ELF_AICPU) {
-        kernelType = KernelType::AICPU;
-    } else {
-        DEBUG_LOG("INVALID kernel binary magic number %u", magic);
-    }
-    return kernelType;
 }
 
 inline uint64_t GetAllThreadSize(RecordGlobalHead const &globalHead)
@@ -786,8 +770,7 @@ uint8_t *__sanitizer_init(uint64_t blockDim)
         LaunchContextSP launchCtx = LaunchManager::Local().GetLastContext();
         if (launchCtx) {
             const auto &funcContext = launchCtx->GetFuncContext();
-            kernelType = GetCurrentKernelType(funcContext->GetRegisterContext()->GetMagic(),
-                funcContext->GetKernelName());
+            kernelType = funcContext->GetKernelType();
         }
     } else {
         kernelType = GetCurrentKernelType();
@@ -850,40 +833,41 @@ KernelType GetCurrentKernelType()
     KernelContext::LaunchEvent launchEvnet{};
     if (KernelContext::Instance().GetRegisterEvent(registerId, registerEvent) &&
         KernelContext::Instance().GetLaunchEvent(launchId, launchEvnet)) {
-        kernelType = GetCurrentKernelType(registerEvent.bin.magic, launchEvnet.kernelName);
+        kernelType = GetKernelType(registerEvent, launchEvnet);
     }
     return kernelType;
 }
 
-KernelType GetCurrentKernelType(uint32_t magic, const std::string &kernelName)
+KernelType GetKernelType(KernelContext::RegisterEvent const &registerEvent,
+                         KernelContext::LaunchEvent const &launchEvent)
 {
-    auto kernelType = MagicToKernelType(magic);
-    // 当 magic 为 RT_DEV_BINARY_MAGIC_ELF，但是 kernel 本身没有 mix 后缀时，无法
-    // 直接推定算子的类型，需要做一些特殊处理
-    if (kernelName.find("_mix_aic") == kernelName.npos &&
-        kernelName.find("_mix_aiv") == kernelName.npos &&
-        kernelType == KernelType::MIX) {
-        // runtime 老接口与之前保持兼容，直接默认为 cube
-        if (!InAclNewLaunchCallStack()) {
-            return KernelType::AICUBE;
-        }
+    auto kernelType = MagicToKernelType(registerEvent.bin.magic);
+    if (kernelType != KernelType::MIX) {
+        return kernelType;
+    }
 
-        // acl 新接口场景下通过 acl 接口获取 kernelType
-        auto lastLaunchContext = LaunchManager::Local().GetLastContext();
-        if (!lastLaunchContext) {
-            ERROR_LOG("Get last launch context failed");
-            return KernelType::INVALID;
+    std::string kernelName = launchEvent.kernelName;
+    RemoveSuffix(kernelName, { MIX_AIC_SUFFIX, MIX_AIV_SUFFIX });
+    bool findKernelMixAic{};
+    bool findKernelMixAiv{};
+    for (auto const &k : registerEvent.kernelNames) {
+        if (kernelName + MIX_AIC_SUFFIX == k) {
+            findKernelMixAic = true;
+        } else if (kernelName + MIX_AIV_SUFFIX == k) {
+            findKernelMixAiv = true;
         }
-
-        kernelType = lastLaunchContext->GetFuncContext()->GetKernelType(kernelName);
-        if (kernelType == KernelType::AICPU) {
-            DEBUG_LOG("kernel name: %s is aicpu function", kernelName.c_str());
-        } else if (kernelType == KernelType::INVALID) {
-            WARN_LOG("kernel name: %s is get kernel type failed, use default CUBE type", kernelName.c_str());
-            kernelType = KernelType::AICUBE;
+        // find both aic and aiv kernels, then break loop
+        if (findKernelMixAic && findKernelMixAiv) {
+            break;
         }
     }
-    return kernelType;
+    if (!findKernelMixAiv) {
+        return KernelType::AICUBE;
+    } else if (!findKernelMixAic) {
+        return KernelType::AIVEC;
+    } else {
+        return KernelType::MIX;
+    }
 }
 
 bool SkipSanitizer(std::string const &kernelName)
@@ -903,8 +887,7 @@ bool SkipSanitizer(std::string const &kernelName)
 
 std::string GetTargetArchName(const FuncContextSP &funcCtx)
 {
-    uint32_t magic = funcCtx->GetRegisterContext()->GetMagic();
-    auto kernelType = GetCurrentKernelType(magic, funcCtx->GetKernelName());
+    auto kernelType = funcCtx->GetKernelType();
     const auto &socVersion = DeviceContext::Local().GetSocVersion();
     return GetArchName(kernelType, socVersion);
 }
@@ -946,7 +929,7 @@ void ReportKernelSummary(LaunchContextSP launchCtx)
     RegisterContextSP regCtx = funcCtx->GetRegisterContext();
 
     KernelSummary kernelSummary;
-    kernelSummary.kernelType = GetCurrentKernelType(regCtx->GetMagic(), funcCtx->GetKernelName());
+    kernelSummary.kernelType = funcCtx->GetKernelType();
     kernelSummary.pcStartAddr = funcCtx->GetStartPC();
     kernelSummary.blockDim = launchCtx->GetLaunchParam().blockDim;
     kernelSummary.isKernelWithDBI = !regCtx->HasStaticStub();

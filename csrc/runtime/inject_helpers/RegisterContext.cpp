@@ -209,6 +209,23 @@ uint32_t GetFlagByMagic(const uint32_t magic)
     return 0;
 }
 
+KernelType MagicToKernelType(uint32_t magic)
+{
+    KernelType kernelType {KernelType::INVALID};
+    if (magic == RT_DEV_BINARY_MAGIC_ELF_AIVEC) {
+        kernelType = KernelType::AIVEC;
+    } else if (magic == RT_DEV_BINARY_MAGIC_ELF_AICUBE) {
+        kernelType = KernelType::AICUBE;
+    } else if (magic == RT_DEV_BINARY_MAGIC_ELF) {
+        kernelType = KernelType::MIX;
+    } else if (magic == RT_DEV_BINARY_MAGIC_ELF_AICPU) {
+        kernelType = KernelType::AICPU;
+    } else {
+        DEBUG_LOG("INVALID kernel binary magic number %u", magic);
+    }
+    return kernelType;
+}
+
 uint64_t GetMetaSection(const rtDevBinary_t &binary, const string &kernelName, vector<uint8_t> &metaData)
 {
     std::map<std::string, Elf64_Shdr> headers;

@@ -49,10 +49,13 @@ public:
 
     void *GetFuncHandle() const { return funcHandle_; }
 
-    KernelType GetKernelType(const std::string &kernelName) const;
+    KernelType GetKernelType() const;
 
     // Create FuncContext and call aclrt api with the same param except register info
     virtual FuncContextSP Clone(const RegisterContextSP &regCtx) const = 0;
+
+protected:
+    KernelType GetKernelTypeFromRuntime() const;
 
 protected:
     void *funcHandle_;

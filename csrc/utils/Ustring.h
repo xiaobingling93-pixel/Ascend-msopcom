@@ -27,9 +27,9 @@
 #include <iomanip>
 #include <unordered_map>
 
-#include "core/LocalProcess.h"
-
 constexpr char const *MC2_AICPU_SUFFIX = {"Mc2AicpuKernel"};
+constexpr char const *MIX_AIC_SUFFIX = "_mix_aic";
+constexpr char const *MIX_AIV_SUFFIX = "_mix_aiv";
 
 inline bool StartsWith(const std::string &str, const std::string &prefix)
 {

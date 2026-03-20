@@ -36,7 +36,9 @@ void __sanitizer_finalize(uint8_t *memInfo, uint64_t blockDim);
  */
 KernelType GetCurrentKernelType(void);
 
-KernelType GetCurrentKernelType(uint32_t magic, const std::string &kernelName);
+KernelType GetKernelType(KernelContext::RegisterEvent const &registerEvent,
+                         KernelContext::LaunchEvent const &launchEvent);
+
 /**
  * @brief 获取最后一次 launch 的算子对应的架构类型
  */
