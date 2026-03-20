@@ -61,7 +61,7 @@ public:
     void SendCaLog(std::unique_ptr<DataHolderBase> data);
     void Enable() { enable_ = true; }
     void Disable() { enable_ = false; }
-    bool IsEnable() { return enable_; }
+    bool IsEnable() const { return enable_; }
 
     void SendSync()
     {

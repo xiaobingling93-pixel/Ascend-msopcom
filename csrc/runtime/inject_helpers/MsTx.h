@@ -211,7 +211,7 @@ public:
     bool IsInMstxRange();
     bool IsMessageEnable(const std::string& msg);
     MstxAPI::MstxDomainRegistration* MstxDomainCreateA(const std::string &domainName);
-    bool IsDomainExist(MstxAPI::MstxDomainRegistration *domain);
+    bool IsDomainExist(MstxAPI::MstxDomainRegistration *domain) const;
     MstxAPI::MstxMemHeap* MstxMemHeapRegister(MstxAPI::MstxDomainRegistration *domain,
         MstxAPI::MstxMemHeapDesc const *desc);
     bool MstxMemHeapUnregister(MstxAPI::MstxDomainRegistration *domain, MstxAPI::MstxMemHeap *heap,

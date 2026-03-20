@@ -14,6 +14,9 @@
  * See the Mulan PSL v2 for more details.
  * ------------------------------------------------------------------------- */
 
+#ifndef __DEVICE_CONTEXT_H__
+#define __DEVICE_CONTEXT_H__
+
 #pragma once
 
 #include <string>
@@ -56,3 +59,5 @@ private:
     int32_t visibleDevId_{0};
     int32_t devId_{0};
 };
+
+#endif // __DEVICE_CONTEXT_H__

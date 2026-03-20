@@ -36,12 +36,12 @@ TEST(HijackedFuncOfIpcSetMemoryNameTest, normal_calling)
     FuncSelector::Instance()->Set(ToolType::SANITIZER);
     const void *ptr = reinterpret_cast<void*>(0x12005810000);
     uint64_t byteCount = 1024;
-    char_t *name = "IPC_MEM_NAME_01234";
+    char *name = "IPC_MEM_NAME_01234";
     uint32_t len = 65;
 
     ASSERT_EQ(instance.Call(ptr, byteCount, name, len), RT_ERROR_RESERVED);
 
-    auto func = [](const void *ptr, uint64_t byteCount, char_t *name, uint32_t len) -> rtError_t {
+    auto func = [](const void *ptr, uint64_t byteCount, char *name, uint32_t len) -> rtError_t {
         return RT_ERROR_NONE;
     };
     instance.originfunc_ = func;
@@ -56,12 +56,12 @@ TEST(HijackedFuncOfIpcSetMemoryNameTest, origin_bad_calling)
     FuncSelector::Instance()->Set(ToolType::SANITIZER);
     const void *ptr = reinterpret_cast<void*>(0x12005810000);
     uint64_t byteCount = 1024;
-    char_t *name = "IPC_MEM_NAME_01234";
+    char *name = "IPC_MEM_NAME_01234";
     uint32_t len = 65;
 
     ASSERT_EQ(instance.Call(ptr, byteCount, name, len), RT_ERROR_RESERVED);
 
-    auto func = [](const void *ptr, uint64_t byteCount, char_t *name, uint32_t len) -> rtError_t {
+    auto func = [](const void *ptr, uint64_t byteCount, char *name, uint32_t len) -> rtError_t {
         return RT_ERROR_INVALID_VALUE;
     };
     instance.originfunc_ = func;

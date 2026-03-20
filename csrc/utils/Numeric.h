@@ -18,7 +18,6 @@
 #ifndef __UTILS_NUMERIC_H__
 #define __UTILS_NUMERIC_H__
 
-#include <cstdint>
 
 template <uint32_t alignSize>
 inline uint32_t CeilByAlignSize(uint32_t v)

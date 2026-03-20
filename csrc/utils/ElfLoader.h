@@ -74,7 +74,7 @@ public:
      */
     bool FromBuffer(const std::vector<char> &buffer);
 
-    Elf Load() { return Elf{sections_, buffer_}; }
+    Elf Load() const { return Elf{sections_, buffer_}; }
 
     static bool LoadHeader(const std::vector<char> &buffer, Elf64_Ehdr &header);
 

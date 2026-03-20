@@ -34,10 +34,10 @@ TEST(HijackedFuncOfIpcDestroyMemoryName, normal_calling)
     MOCKER(&LocalDevice::Notify).stubs().will(returnValue(0));
     HijackedFuncOfIpcDestroyMemoryName instance;
     FuncSelector::Instance()->Set(ToolType::SANITIZER);
-    const char_t *name = "IPC_MEM_NAME_01234";
+    const char *name = "IPC_MEM_NAME_01234";
     ASSERT_EQ(instance.Call(name), RT_ERROR_RESERVED);
 
-    auto func = [](const char_t *name) -> rtError_t {
+    auto func = [](const char *name) -> rtError_t {
         return RT_ERROR_NONE;
     };
     instance.originfunc_ = func;
@@ -50,11 +50,11 @@ TEST(HijackedFuncOfIpcDestroyMemoryName, origin_bad_calling)
     MOCKER(&LocalDevice::Notify).stubs().will(returnValue(0));
     HijackedFuncOfIpcDestroyMemoryName instance;
     FuncSelector::Instance()->Set(ToolType::SANITIZER);
-    const char_t *name = "IPC_MEM_NAME_01234";
+    const char *name = "IPC_MEM_NAME_01234";
     instance.Call(name);
     ASSERT_EQ(instance.Call(name), RT_ERROR_RESERVED);
 
-    auto func = [](const char_t *name) -> rtError_t {
+    auto func = [](const char *name) -> rtError_t {
         return RT_ERROR_INVALID_VALUE ;
     };
     instance.originfunc_ = func;

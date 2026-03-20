@@ -14,6 +14,9 @@
  * See the Mulan PSL v2 for more details.
  * ------------------------------------------------------------------------- */
 
+#ifndef __KERNEL_CONTEXT_H__
+#define __KERNEL_CONTEXT_H__
+
 #pragma once
 #include <string>
 #include <vector>
@@ -264,7 +267,7 @@ public:
     // 根据 hdl 查询 pcStart 地址
     bool GetPcStartAddr(KernelHandlePtr hdl, uint64_t &pcStartAddr);
 
-    uint64_t GetNextRegisterId() { return registerEvents_.size(); }
+    uint64_t GetNextRegisterId() const { return registerEvents_.size(); }
 
     uint64_t GetLaunchId() const;
 
@@ -311,12 +314,12 @@ public:
 
     bool SaveAicore(const std::string &outputDir, uint64_t launchId = UINT64_MAX); // msopt MC2 落盘aicore.o
 
-    bool CheckHdlVaild(const KernelHandle* hdl)
+    bool CheckHdlVaild(const KernelHandle* hdl) const
     {
         return hdlToRegId_.find(hdl) != hdlToRegId_.end();
     }
 
-    bool CheckStubValid(const StubFunc* stub)
+    bool CheckStubValid(const StubFunc* stub) const
     {
         return stubInfo_.find(stub) != stubInfo_.end();
     }
@@ -460,3 +463,5 @@ private:
     uint32_t simtUbDynamicSize_{};
     bool isSimt_{false};
 };
+
+#endif // __KERNEL_CONTEXT_H__

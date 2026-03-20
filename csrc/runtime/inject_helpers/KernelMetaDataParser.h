@@ -14,6 +14,8 @@
  * See the Mulan PSL v2 for more details.
  * ------------------------------------------------------------------------- */
 
+#ifndef __KERNEL_META_DATA_PARSER_H__
+#define __KERNEL_META_DATA_PARSER_H__
 
 #pragma once
 
@@ -134,3 +136,5 @@ private:
     std::vector<uint8_t> metaData_;
     ParseTableType dfxParser_;
 };
+
+#endif // __KERNEL_META_DATA_PARSER_H__

@@ -35,7 +35,7 @@ RTS_API rtError_t rtMemcpyAsyncOrigin(void *dst, uint64_t destMax, const void *s
 RTS_API rtError_t rtRegisterAllKernelOrigin(const rtDevBinary_t *bin, void **hdl);
 RTS_API rtError_t rtDevBinaryRegisterOrigin(const rtDevBinary_t *bin, void **hdl);
 RTS_API rtError_t rtDevBinaryUnRegisterOrigin(void *hdl);
-RTS_API rtError_t rtFunctionRegisterOrigin(void *binHandle, const void *stubFunc, const char_t *stubName,
+RTS_API rtError_t rtFunctionRegisterOrigin(void *binHandle, const void *stubFunc, const char *stubName,
     const void *kernelInfoExt, uint32_t funcMode);
 RTS_API rtError_t rtKernelLaunchWithHandleV2Origin(void *hdl, const uint64_t tilingKey, uint32_t blockDim,
     rtArgsEx_t *argsInfo, rtSmDesc_t *smDesc, rtStream_t stm, const rtTaskCfgInfo_t *cfgInfo);
@@ -51,7 +51,7 @@ RTS_API rtError_t rtCtxGetCurrentDefaultStreamOrigin(rtStream_t *stm);
 RTS_API rtError_t rtKernelGetAddrAndPrefCntOrigin(void *hdl, const uint64_t tilingKey, const void * const stubFunc,
     const uint32_t flag, void **addr, uint32_t *prefetchCnt);
 RTS_API rtError_t rtProfSetProSwitchOrigin(void *data, uint32_t len);
-RTS_API rtError_t rtGetSocVersionOrigin(char_t *ver, const uint32_t maxLen);
+RTS_API rtError_t rtGetSocVersionOrigin(char *ver, const uint32_t maxLen);
 RTS_API rtError_t rtGetVisibleDeviceIdByLogicDeviceIdOrigin(const int32_t logicDeviceId,
     int32_t *const visibleDeviceId);
 RTS_API rtError_t rtStreamCreateOrigin(rtStream_t *stream, int32_t priority);

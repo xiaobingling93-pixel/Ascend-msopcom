@@ -14,6 +14,9 @@
  * See the Mulan PSL v2 for more details.
  * ------------------------------------------------------------------------- */
 
+#ifndef __FUNC_CONTEXT_H__
+#define __FUNC_CONTEXT_H__
+
 #pragma once
 
 #include <map>
@@ -64,3 +67,4 @@ protected:
 };
 using FuncContextSP = std::shared_ptr<FuncContext>;
 
+#endif // __FUNC_CONTEXT_H__

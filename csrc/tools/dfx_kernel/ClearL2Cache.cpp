@@ -22,7 +22,7 @@ extern "C" __global__ [aicore] void ClearL2Cache(__gm__ void* buffer, __gm__ voi
         return;
 #endif
 
-#if defined(__DAV_C220_CUBE__) || __CCE_AICORE__ == 200
+#if defined(__DAV_C220_CUBE__) || (defined(__CCE_AICORE__) && __CCE_AICORE__ == 200)
     uint64_t blockLen = *(__gm__ uint64_t *)tilingSize;
     __gm__ int8_t* bufferStart = (__gm__ int8_t *)buffer + blockLen * get_block_idx();
     __cbuf__  int8_t *l1Addr = 0;

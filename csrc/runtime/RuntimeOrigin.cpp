@@ -102,7 +102,7 @@ rtError_t rtDevBinaryUnRegisterOrigin(void *hdl)
     LOAD_FUNCTION_BODY(RuntimeLibName(), rtDevBinaryUnRegister, hdl);
 }
 
-rtError_t rtFunctionRegisterOrigin(void *binHandle, const void *stubFunc, const char_t *stubName,
+rtError_t rtFunctionRegisterOrigin(void *binHandle, const void *stubFunc, const char *stubName,
     const void *kernelInfoExt, uint32_t funcMode)
 {
     LOAD_FUNCTION_BODY(RuntimeLibName(), rtFunctionRegister, binHandle, stubFunc, stubName, kernelInfoExt, funcMode);
@@ -157,7 +157,7 @@ rtError_t rtKernelGetAddrAndPrefCntOrigin(void *hdl, const uint64_t tilingKey, c
     LOAD_FUNCTION_BODY(RuntimeLibName(), rtKernelGetAddrAndPrefCnt, hdl, tilingKey, stubFunc, flag, addr, prefetchCnt);
 }
 
-RTS_API rtError_t rtGetSocVersionOrigin(char_t *ver, const uint32_t maxLen)
+RTS_API rtError_t rtGetSocVersionOrigin(char *ver, const uint32_t maxLen)
 {
     LOAD_FUNCTION_BODY(RuntimeLibName(), rtGetSocVersion, ver, maxLen);
 }

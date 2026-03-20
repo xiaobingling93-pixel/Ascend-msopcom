@@ -26,7 +26,7 @@
 HijackedFuncOfIpcOpenMemory::HijackedFuncOfIpcOpenMemory()
     : HijackedFuncType(RuntimeLibName(), "rtIpcOpenMemory") {}
 
-rtError_t HijackedFuncOfIpcOpenMemory::Call(void **ptr, const char_t *name)
+rtError_t HijackedFuncOfIpcOpenMemory::Call(void **ptr, const char *name)
 {
     DEBUG_LOG("enter HijackedFuncOfIpcOpenMemory name:%.2048s.", name);
 

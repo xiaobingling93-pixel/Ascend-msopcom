@@ -250,7 +250,7 @@ rtError_t rtRegisterAllKernel(const rtDevBinary_t *bin, void **hdl)
     return instance.Call(bin, hdl);
 }
 
-rtError_t rtFunctionRegister(void *binHandle, const void *stubFunc, const char_t *stubName,
+rtError_t rtFunctionRegister(void *binHandle, const void *stubFunc, const char *stubName,
                              const void *kernelInfoExt, uint32_t funcMode)
 {
     PRINT_ENTER_INSTRUMENTOR;

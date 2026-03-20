@@ -188,7 +188,7 @@ MstxAPI::MstxDomainRegistration* MsTx::MstxDomainCreateA(const std::string &doma
     return it->second.get();
 }
 
-bool MsTx::IsDomainExist(MstxDomainRegistration *domain)
+bool MsTx::IsDomainExist(MstxDomainRegistration *domain) const 
 {
     if (domain == nullptr) {
          // globalDomain default is nullptr

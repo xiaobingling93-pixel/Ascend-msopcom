@@ -14,6 +14,9 @@
  * See the Mulan PSL v2 for more details.
  * ------------------------------------------------------------------------- */
 
+#ifndef __REGISTER_CONTEXT_H__
+#define __REGISTER_CONTEXT_H__
+
 #pragma once
 
 #include <elf.h>
@@ -154,3 +157,5 @@ private:
 };
 
 using RegisterContextSP = std::shared_ptr<RegisterContext>;
+
+#endif // __REGISTER_CONTEXT_H__

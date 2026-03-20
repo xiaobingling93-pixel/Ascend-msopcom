@@ -26,7 +26,7 @@
 HijackedFuncOfFunctionRegister::HijackedFuncOfFunctionRegister()
     : HijackedFuncOfFunctionRegister::HijackedFuncType(
     std::string(RuntimeLibName()), std::string("rtFunctionRegister")) {}
-void HijackedFuncOfFunctionRegister::Pre(void *binHandle, const void *stubFunc, const char_t *stubName,
+void HijackedFuncOfFunctionRegister::Pre(void *binHandle, const void *stubFunc, const char *stubName,
     const void *kernelInfoExt, uint32_t funcMode)
 {
     this->binHandle_ = binHandle;

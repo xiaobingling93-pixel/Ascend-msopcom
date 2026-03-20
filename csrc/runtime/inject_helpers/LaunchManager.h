@@ -14,6 +14,9 @@
  * See the Mulan PSL v2 for more details.
  * ------------------------------------------------------------------------- */
 
+#ifndef __LAUNCH_MANAGER_H__
+#define __LAUNCH_MANAGER_H__
+
 #pragma once
 
 #include <unordered_map>
@@ -85,3 +88,4 @@ private:
     uint32_t simtUbDynamicSize_{};
 };
 
+#endif // __LAUNCH_MANAGER_H__

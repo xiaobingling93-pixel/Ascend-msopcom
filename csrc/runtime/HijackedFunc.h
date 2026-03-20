@@ -72,7 +72,7 @@ private:
 class HijackedFuncOfFunctionRegister : public decltype(HijackedFuncHelper(&rtFunctionRegister)) {
 public:
     explicit HijackedFuncOfFunctionRegister();
-    void Pre(void *binHandle, const void *stubFunc, const char_t *stubName,
+    void Pre(void *binHandle, const void *stubFunc, const char *stubName,
         const void *kernelInfoExt, uint32_t funcMode) override;
     rtError_t Post(rtError_t ret) override;
 private:
@@ -434,21 +434,21 @@ class HijackedFuncOfIpcSetMemoryName : public decltype(HijackedFuncHelper(&rtIpc
 public:
     explicit HijackedFuncOfIpcSetMemoryName();
     ~HijackedFuncOfIpcSetMemoryName() override = default;
-    rtError_t Call(const void *ptr, uint64_t byteCount, char_t *name, uint32_t len) override;
+    rtError_t Call(const void *ptr, uint64_t byteCount, char *name, uint32_t len) override;
 };
 
 class HijackedFuncOfIpcDestroyMemoryName: public decltype(HijackedFuncHelper(&rtIpcDestroyMemoryName)) {
 public:
     explicit HijackedFuncOfIpcDestroyMemoryName();
     ~HijackedFuncOfIpcDestroyMemoryName() override = default;
-    rtError_t Call(const char_t *name) override;
+    rtError_t Call(const char *name) override;
 };
 
 class HijackedFuncOfIpcOpenMemory: public decltype(HijackedFuncHelper(&rtIpcOpenMemory)) {
 public:
     explicit HijackedFuncOfIpcOpenMemory();
     ~HijackedFuncOfIpcOpenMemory() override = default;
-    rtError_t Call(void **ptr, const char_t *name) override;
+    rtError_t Call(void **ptr, const char *name) override;
 };
 
 class HijackedFuncOfIpcCloseMemory: public decltype(HijackedFuncHelper(&rtIpcCloseMemory)) {

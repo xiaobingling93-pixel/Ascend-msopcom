@@ -15,7 +15,6 @@
  * ------------------------------------------------------------------------- */
 
  
-#include <iostream>
 #include "ascend_hal/HijackedFunc.h"
 #include "runtime/inject_helpers/KernelContext.h"
 #include "runtime/RuntimeConfig.h"

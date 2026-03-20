@@ -25,7 +25,7 @@ TEST(rtFunctionRegister, call_pre_func_expect_return)
 {
     void *binHandle = nullptr;
     const void *stubFunc = nullptr;
-    const char_t *stubName = nullptr;
+    const char *stubName = nullptr;
     const void *kernelInfoExt = nullptr;
     uint32_t funcMode = 0;
     HijackedFuncOfFunctionRegister instance;
@@ -36,7 +36,7 @@ TEST(rtFunctionRegister, call_post_func_expect_return)
 {
     void *binHandle = nullptr;
     const void *stubFunc = nullptr;
-    const char_t *stubName = nullptr;
+    const char *stubName = nullptr;
     const void *kernelInfoExt = nullptr;
     uint32_t funcMode = 0;
     HijackedFuncOfFunctionRegister instance;
@@ -49,7 +49,7 @@ TEST(rtFunctionRegister, call_function_with_null_input_expect_return)
 {
     void *binHandle = nullptr;
     const void *stubFunc = nullptr;
-    const char_t *stubName = nullptr;
+    const char *stubName = nullptr;
     const void *kernelInfoExt = nullptr;
     uint32_t funcMode = 0;
  
@@ -64,7 +64,7 @@ TEST(rtFunctionRegister, call_function_with_input)
 {
     void *binHandle = new char [20];
     const void *stubFunc = new char [20];
-    const char_t *stubName = nullptr;
+    const char *stubName = nullptr;
     const void *kernelInfoExt = nullptr;
     uint32_t funcMode = 0;
  

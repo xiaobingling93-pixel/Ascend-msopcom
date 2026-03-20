@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <cstdint>
 
 template<typename StructT, std::size_t alignSize, typename = void>
 struct StructAlignTo : public StructT {

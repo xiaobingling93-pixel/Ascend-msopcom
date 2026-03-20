@@ -19,7 +19,6 @@
 #define __UTILS__SERIALIZER_H__
 
 #include <string>
-#include <type_traits>
 #include <algorithm>
 
 /**

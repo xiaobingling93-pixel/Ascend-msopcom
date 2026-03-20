@@ -14,6 +14,9 @@
  * See the Mulan PSL v2 for more details.
  * ------------------------------------------------------------------------- */
 
+#ifndef __ARGS_CONTEXT_H__
+#define __ARGS_CONTEXT_H__
+
 #pragma once
 
 #include <map>
@@ -93,3 +96,5 @@ bool DumpInputData(const std::string &outputDir,
 bool DumpTilingData(const std::string &outputDir,
                     std::vector<uint8_t> const& tilingData,
                     DumperContext &config);
+
+#endif // __ARGS_CONTEXT_H__

@@ -14,6 +14,9 @@
  * See the Mulan PSL v2 for more details.
  * ------------------------------------------------------------------------- */
 
+#ifndef __LAUNCH_CONTEXT_H__
+#define __LAUNCH_CONTEXT_H__
+
 #pragma once
 
 #include <map>
@@ -67,3 +70,5 @@ private:
 };
 
 using LaunchContextSP = std::shared_ptr<LaunchContext>;
+
+#endif // __LAUNCH_CONTEXT_H__

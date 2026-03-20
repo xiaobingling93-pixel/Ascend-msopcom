@@ -219,7 +219,7 @@ rtError_t rtRegisterAllKernel(const rtDevBinary_t *bin, void **hdl)
     return instance.Call(bin, hdl);
 }
 
-rtError_t rtFunctionRegister(void *binHandle, const void *stubFunc, const char_t *stubName,
+rtError_t rtFunctionRegister(void *binHandle, const void *stubFunc, const char *stubName,
                              const void *kernelInfoExt, uint32_t funcMode)
 {
     PRINT_ENTER_INSTRUMENTOR;
@@ -513,7 +513,7 @@ extern "C" __attribute__((visibility("default"))) void __sanitizer_report_free(v
 
 /*************** implementation of mstx api by mssanitizer end ***************/
 
-rtError_t rtIpcSetMemoryName(const void *ptr, uint64_t byteCount, char_t *name, uint32_t len)
+rtError_t rtIpcSetMemoryName(const void *ptr, uint64_t byteCount, char *name, uint32_t len)
 {
     HijackedFuncOfIpcSetMemoryName instance;
     if (HijackedLayerManager::Instance().ParentInCallStack(__func__)) {
@@ -522,7 +522,7 @@ rtError_t rtIpcSetMemoryName(const void *ptr, uint64_t byteCount, char_t *name, 
     return instance.Call(ptr, byteCount, name, len);
 }
 
-rtError_t rtIpcDestroyMemoryName(const char_t *name)
+rtError_t rtIpcDestroyMemoryName(const char *name)
 {
     HijackedFuncOfIpcDestroyMemoryName instance;
     if (HijackedLayerManager::Instance().ParentInCallStack(__func__)) {
@@ -532,7 +532,7 @@ rtError_t rtIpcDestroyMemoryName(const char_t *name)
 }
 
 
-rtError_t rtIpcOpenMemory(void **ptr, const char_t *name)
+rtError_t rtIpcOpenMemory(void **ptr, const char *name)
 {
     HijackedFuncOfIpcOpenMemory instance;
     if (HijackedLayerManager::Instance().ParentInCallStack(__func__)) {

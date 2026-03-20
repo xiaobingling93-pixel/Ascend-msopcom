@@ -1633,12 +1633,12 @@ bool ProfDataCollect::ProfData(rtStream_t stream, const std::function<bool(void)
     return dataCollect_->ProfData(stream, kernelLaunchFunc);
 }
 
-bool ProfDataCollect::ProfData()
+bool ProfDataCollect::ProfData() const
 {
     return dataCollect_->ProfData();
 }
 
-void ProfDataCollect::ProfInit(const void *hdl, const void *stubFunc, bool type)
+void ProfDataCollect::ProfInit(const void *hdl, const void *stubFunc, bool type) const
 {
     dataCollect_->ProfInit(hdl, stubFunc, type);
 }
@@ -1672,11 +1672,11 @@ void ProfDataCollect::PostProcess() const
     }
 }
 
-void ProfDataCollect::GenBBcountFile(uint64_t regId, uint64_t memSize, uint8_t *memInfo)
+void ProfDataCollect::GenBBcountFile(uint64_t regId, uint64_t memSize, uint8_t *memInfo) const
 {
     dataCollect_->GenBBcountFile(regId, memSize, memInfo);
 }
-bool ProfDataCollect::IsNeedProf()
+bool ProfDataCollect::IsNeedProf() const
 {
     return (!dataCollect_->outputPath_.empty());
 }
@@ -1726,12 +1726,12 @@ bool ProfDataCollect::IsNeedRunOriginLaunch()
     return !IsNeedProf() || !(ProfConfig::Instance().GetConfig().dbiFlag != DBI_FLAG_BB_COUNT && ProfConfig::Instance().IsAppReplay());
 }
 
-void ProfDataCollect::GenDBIData(uint64_t memSize, uint8_t *memInfo)
+void ProfDataCollect::GenDBIData(uint64_t memSize, uint8_t *memInfo) const
 {
     dataCollect_->GenDBIData(memSize, memInfo);
 }
 
-void ProfDataCollect::GenRecordData(uint64_t memSize, uint8_t *memInfo, const std::string &recordName)
+void ProfDataCollect::GenRecordData(uint64_t memSize, uint8_t *memInfo, const std::string &recordName) const
 {
     dataCollect_->GenRecordData(memSize, memInfo, recordName);
 }

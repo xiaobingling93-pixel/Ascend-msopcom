@@ -37,11 +37,11 @@ TEST(HijackedFuncOfIpcOpenMemory, normal_calling)
 
     void *gmPtr = nullptr;
     void **ptr = &gmPtr;
-    const char_t *name = "IPC_MEM_NAME_01234";
+    const char *name = "IPC_MEM_NAME_01234";
 
     ASSERT_EQ(instance.Call(ptr, name), RT_ERROR_RESERVED);
 
-    auto func = [](void **ptr, const char_t *name) -> rtError_t {
+    auto func = [](void **ptr, const char *name) -> rtError_t {
         return RT_ERROR_NONE;
     };
     instance.originfunc_ = func;
@@ -58,11 +58,11 @@ TEST(HijackedFuncOfIpcOpenMemory, origin_bad_calling)
 
     void *gmPtr = nullptr;
     void **ptr = &gmPtr;
-    const char_t *name = "IPC_MEM_NAME_01234";
+    const char *name = "IPC_MEM_NAME_01234";
 
     ASSERT_EQ(instance.Call(ptr, name), RT_ERROR_RESERVED);
 
-    auto func = [](void **ptr, const char_t *name) -> rtError_t {
+    auto func = [](void **ptr, const char *name) -> rtError_t {
         return RT_ERROR_INVALID_VALUE;
     };
     instance.originfunc_ = func;

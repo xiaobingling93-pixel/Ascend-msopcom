@@ -27,7 +27,7 @@ HijackedFuncOfIpcSetMemoryName::HijackedFuncOfIpcSetMemoryName()
     : HijackedFuncType(RuntimeLibName(), "rtIpcSetMemoryName")
 {}
 
-rtError_t HijackedFuncOfIpcSetMemoryName::Call(const void *ptr, uint64_t byteCount, char_t *name, uint32_t len)
+rtError_t HijackedFuncOfIpcSetMemoryName::Call(const void *ptr, uint64_t byteCount, char *name, uint32_t len)
 {
     DEBUG_LOG(
         "enter HijackedFuncOfIpcSetMemoryName byteCount:%lu, name:%s, len:%u", byteCount, name, len);

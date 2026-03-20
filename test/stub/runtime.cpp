@@ -27,7 +27,7 @@ RTS_API rtError_t rtDevBinaryRegister(const rtDevBinary_t *bin, void **hdl)
     return RT_ERROR_NONE;
 }
 
-RTS_API rtError_t rtFunctionRegister(void *binHandle, const void *stubFunc, const char_t *stubName,
+RTS_API rtError_t rtFunctionRegister(void *binHandle, const void *stubFunc, const char *stubName,
                                      const void *kernelInfoExt, uint32_t funcMode)
 {
     return RT_ERROR_NONE;

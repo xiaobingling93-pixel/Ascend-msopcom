@@ -20,9 +20,6 @@ extern "C" {
 #define RTS_API
 #endif  // RTS_API
 
-#ifndef char_t
-typedef char char_t;
-#endif
 
 /**
   * @ingroup rt_kernel
@@ -353,7 +350,7 @@ RTS_API rtError_t rtSetDevice(int32_t devId);
  * @brief get chipType
  * @return RT_ERROR_NONE for ok
  */
-RTS_API rtError_t rtGetSocVersion(char_t *ver, const uint32_t maxLen);
+RTS_API rtError_t rtGetSocVersion(char *ver, const uint32_t maxLen);
 
 /**
  * @ingroup dvrt_mem
@@ -467,7 +464,7 @@ RTS_API rtError_t rtDevBinaryUnRegister(void *hdl);
  * @return RT_ERROR_NONE for ok
  * @return RT_ERROR_INVALID_VALUE for error input
  */
-RTS_API rtError_t rtFunctionRegister(void *binHandle, const void *stubFunc, const char_t *stubName,
+RTS_API rtError_t rtFunctionRegister(void *binHandle, const void *stubFunc, const char *stubName,
                                      const void *kernelInfoExt, uint32_t funcMode);
 
 /**
@@ -597,7 +594,7 @@ RTS_API rtError_t rtGetDeviceCount(int32_t *cnt);
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
-RTS_API rtError_t rtIpcSetMemoryName(const void *ptr, uint64_t byteCount, char_t *name, uint32_t len);
+RTS_API rtError_t rtIpcSetMemoryName(const void *ptr, uint64_t byteCount, char *name, uint32_t len);
 
 /**
  * @ingroup dvrt_mem
@@ -607,7 +604,7 @@ RTS_API rtError_t rtIpcSetMemoryName(const void *ptr, uint64_t byteCount, char_t
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
-RTS_API rtError_t rtIpcDestroyMemoryName(const char_t *name);
+RTS_API rtError_t rtIpcDestroyMemoryName(const char *name);
 
 
 /**
@@ -619,7 +616,7 @@ RTS_API rtError_t rtIpcDestroyMemoryName(const char_t *name);
  * @return RT_ERROR_INVALID_VALUE for error input
  * @return RT_ERROR_DRV_ERR for driver error
  */
-RTS_API rtError_t rtIpcOpenMemory(void **ptr, const char_t *name);
+RTS_API rtError_t rtIpcOpenMemory(void **ptr, const char *name);
 
 /**
  * @ingroup dvrt_mem

@@ -16,9 +16,7 @@
 
 #pragma once
 
-#include <cstdint>
 #include <string>
-#include <utility>
 
 /*
  * KernelMatcher is used to match launch event.
