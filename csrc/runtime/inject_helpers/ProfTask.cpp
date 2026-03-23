@@ -178,9 +178,10 @@ private:
     bool WriteInstrChannelData(const std::string &prefixName, InstrChannel channelId,
         const char *data, int validLen, InstrChnReadCtrl &instrChnReadController) override;
     bool StartInstrProfTask(int mode);
+    void StopInstrProfChannels();
     std::map<InstrChannel, InstrProfChnInfo> instrProfChn_;
-    std::atomic<bool> timelineFinish_ {false};
-    std::atomic<bool> pcSamplingFinish_ {false};
+    // InstrProf 采集状态机
+    std::atomic<InstrProfState> instrProfState_ {InstrProfState::IDLE};
 private:
     bool isStarsStart_ = false;
     bool StartStarsTask();
@@ -599,10 +600,11 @@ bool ProfTaskOfA5::WriteInstrChannelData(const std::string &prefixName, InstrCha
         instrChnReadController.splitFileNum += 1;
         instrChnReadController.InstrProfReadSize = 0;
     }
+    // 根据当前 InstrProf 状态决定写入的文件名
     std::string binName;
-    if (ProfConfig::Instance().IsPCSamplingEnabled() && isSimt_ && !pcSamplingFinish_) {
+    if (instrProfState_ == InstrProfState::PC_SAMPLING) {
         binName = "pcSampling.bin." + std::to_string(instrChnReadController.splitFileNum);
-    } else if (ProfConfig::Instance().IsTimelineEnabled() && !timelineFinish_) {
+    } else if (instrProfState_ == InstrProfState::TIMELINE) {
         binName = "timeline.bin." + std::to_string(instrChnReadController.splitFileNum);
     } else {
         return true;
@@ -696,12 +698,19 @@ bool ProfTaskOfA5::Start(uint32_t replayCount, bool isSimt)
 {
     profRunning_ = true;
     isSimt_ = isSimt;
-    if (ProfConfig::Instance().IsPCSamplingEnabled() && isSimt_ && !pcSamplingFinish_) {
+    // 状态机: IDLE 态下根据配置决定进入 PC_SAMPLING 或 TIMELINE
+    if (instrProfState_ == InstrProfState::IDLE &&
+        ProfConfig::Instance().IsPCSamplingEnabled() && isSimt_) {
+        instrProfState_ = InstrProfState::PC_SAMPLING;
         return StartInstrProfTask(INSTR_PROF_MODE_PC_SAMPLING);
     }
-    if (ProfConfig::Instance().IsTimelineEnabled() && !timelineFinish_) {
+    // IDLE 或 TIMELINE 态下，如果 timeline 使能则启动 timeline 采集
+    if ((instrProfState_ == InstrProfState::IDLE || instrProfState_ == InstrProfState::TIMELINE) &&
+        ProfConfig::Instance().IsTimelineEnabled()) {
+        instrProfState_ = InstrProfState::TIMELINE;
         return StartInstrProfTask(INSTR_PROF_MODE_BIU_PERF);
     }
+    // DONE 或未启用 InstrProf → 正常 FFTS 重放
     if (!StartFFTSTask(replayCount)) {
         return false;
     }
@@ -713,22 +722,29 @@ bool ProfTaskOfA5::Start(uint32_t replayCount, bool isSimt)
     return true;
 }
 
+// 关闭所有 InstrProf 通道的辅助方法
+void ProfTaskOfA5::StopInstrProfChannels()
+{
+    for (auto const &it : instrProfChn_) {
+        prof_stop_origin(deviceId_, static_cast<uint32_t>(it.first));
+    }
+}
+
 void ProfTaskOfA5::Stop()
 {
     prof_stop_origin(deviceId_, CHANNEL_FFTS_PROFILE_BUFFER_TASK);
     if (isStarsStart_) {
         prof_stop_origin(deviceId_, CHANNEL_STARS_SOC_LOG_BUFFER);
     }
-    if (ProfConfig::Instance().IsPCSamplingEnabled() && !pcSamplingFinish_) {
-        for (auto const &it : instrProfChn_) {
-            prof_stop_origin(deviceId_, static_cast<uint32_t>(it.first));
-        }
-        pcSamplingFinish_ = true;
-    } else if (ProfConfig::Instance().IsTimelineEnabled() && !timelineFinish_) {
-        for (auto const &it : instrProfChn_) {
-            prof_stop_origin(deviceId_, static_cast<uint32_t>(it.first));
-        }
-        timelineFinish_ = true;
+    // 状态机转移: PC_SAMPLING → TIMELINE(如果timeline使能) 或 DONE
+    if (instrProfState_ == InstrProfState::PC_SAMPLING) {
+        StopInstrProfChannels();
+        instrProfState_ = ProfConfig::Instance().IsTimelineEnabled()
+            ? InstrProfState::TIMELINE : InstrProfState::DONE;
+    } else if (instrProfState_ == InstrProfState::TIMELINE) {
+        // TIMELINE → DONE
+        StopInstrProfChannels();
+        instrProfState_ = InstrProfState::DONE;
     }
     profRunning_ = false;
 }

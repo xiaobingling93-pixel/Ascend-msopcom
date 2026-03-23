@@ -32,6 +32,20 @@
  * 1. 只有为驱动通道采集任务时，才可以在该文件中添加内容。.
  *
  */
+/*
+ * InstrProf 采集状态机:
+ * IDLE → PC_SAMPLING → TIMELINE → DONE (同时开启pcsampling和timeline时的完整流转)
+ * IDLE → TIMELINE → DONE (仅开启timeline)
+ * IDLE → PC_SAMPLING → DONE (仅开启pcsampling)
+ * DONE 后进入正常 FFTS 重放流程
+ */
+enum class InstrProfState : uint8_t {
+    IDLE,           // 初始态: 未开始任何 InstrProf 采集
+    PC_SAMPLING,    // 正在执行 PCSampling 采集
+    TIMELINE,       // 正在执行 Timeline 采集
+    DONE            // InstrProf 采集全部完成
+};
+
 class ProfTask {
 public:
     ProfTask(const MessageOfProfConfig &profTaskConfig, uint32_t deviceId) : profTaskConfig_(profTaskConfig),

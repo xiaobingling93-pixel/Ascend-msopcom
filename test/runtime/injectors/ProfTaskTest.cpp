@@ -399,17 +399,15 @@ TEST(ProfTask, test_A5_channel_read_when_timeline_or_pcsampling_enabled_and_expe
     std::map<int32_t, std::string> aicoreOutputPathMap = {{0, "./"}};
     DeviceContext::Local().SetDeviceId(1);
     DeviceContext::Local().SetSocVersion("Ascend950PR_9589");
-    std::unique_ptr<ProfTask> task = ProfTaskFactory::Create();
-    ASSERT_TRUE(task != nullptr);
     prof_poll_info_t channels[PROF_CHANNEL_NUM];
     channels[0].device_id = 1;
     channels[0].channel_id = static_cast<uint32_t>(InstrChannel::GROUP0_AIC);
     MOCKER(prof_drv_start_origin)
         .stubs()
-        .will(returnValue(1));
+        .will(returnValue(0));
     MOCKER(prof_stop_origin)
         .stubs()
-        .will(returnValue(1));
+        .will(returnValue(0));
     MOCKER(prof_channel_poll_origin)
         .stubs()
         .with(outBoundP(channels), any(), any(), any())
@@ -421,20 +419,29 @@ TEST(ProfTask, test_A5_channel_read_when_timeline_or_pcsampling_enabled_and_expe
         .stubs()
         .will(returnValue(path));
     ASSERT_TRUE(MkdirRecusively(path));
+
+    // 测试 timeline 采集流程: IDLE → TIMELINE → DONE
     ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_INSTR_PROF_END;
-    task->Start(0);
-    task->profRunning_ = false;
-    task->ChannelRead();
+    std::unique_ptr<ProfTask> task1 = ProfTaskFactory::Create();
+    ASSERT_TRUE(task1 != nullptr);
+    task1->Start(0);
+    task1->profRunning_ = false;
+    task1->ChannelRead();
     string filePath = JoinPath({path, "timeline.bin.0"});
-    task->Stop();
+    task1->Stop();
     ASSERT_TRUE(IsPathExists(filePath));
+
+    // 测试 pcSampling 采集流程: IDLE → PC_SAMPLING → DONE
     ProfConfig::Instance().profConfig_.dbiFlag = DBI_FLAG_INSTR_PROF_START;
-    task->Start(0, true);
-    task->profRunning_ = false;
-    task->ChannelRead();
+    std::unique_ptr<ProfTask> task2 = ProfTaskFactory::Create();
+    ASSERT_TRUE(task2 != nullptr);
+    task2->Start(0, true);
+    task2->profRunning_ = false;
+    task2->ChannelRead();
     filePath = JoinPath({path, "pcSampling.bin.0"});
-    task->Stop();
+    task2->Stop();
     ASSERT_TRUE(IsPathExists(filePath));
+
     RemoveAll(path);
     GlobalMockObject::verify();
 }
