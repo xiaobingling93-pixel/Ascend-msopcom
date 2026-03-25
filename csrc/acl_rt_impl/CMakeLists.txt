@@ -44,6 +44,7 @@ file(GLOB INJECTION_SRC
     HijackedFuncOfAclrtGetDeviceInfoImpl.cpp
     HijackedFuncOfAclrtGetSocNameImpl.cpp
     HijackedFuncOfAclrtLaunchKernelImpl.cpp
+    HijackedFuncOfAclrtLaunchKernelV2Impl.cpp
     HijackedFuncOfAclrtLaunchKernelWithConfigImpl.cpp
     HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl.cpp
     HijackedFuncOfAclrtMallocWithCfgImpl.cpp

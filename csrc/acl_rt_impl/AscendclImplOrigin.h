@@ -55,6 +55,7 @@ aclError aclrtKernelArgsParaUpdateImplOrigin(aclrtArgsHandle argsHandle, aclrtPa
 aclError aclrtKernelArgsFinalizeImplOrigin(aclrtArgsHandle argsHandle);
 aclError aclrtLaunchKernelWithConfigImplOrigin(aclrtFuncHandle funcHandle, uint32_t blockDim, aclrtStream stream, aclrtLaunchKernelCfg *cfg, aclrtArgsHandle argsHandle, void *reserve);
 aclError aclrtLaunchKernelImplOrigin(aclrtFuncHandle funcHandle, uint32_t blockDim, const void *argsData, size_t argsSize, aclrtStream stream);
+aclError aclrtLaunchKernelV2ImplOrigin(aclrtFuncHandle funcHandle, uint32_t numBlocks, const void *argsData, size_t argsSize, aclrtLaunchKernelCfg *cfg, aclrtStream stream);
 aclError aclrtLaunchKernelWithHostArgsImplOrigin(aclrtFuncHandle funcHandle, uint32_t blockDim, aclrtStream stream, aclrtLaunchKernelCfg *cfg, void *hostArgs,
     size_t argsSize, aclrtPlaceHolderInfo *placeHolderArray, size_t placeHolderNum);
 aclError aclmdlRICaptureBeginImplOrigin(aclrtStream stream, aclmdlRICaptureMode mode);

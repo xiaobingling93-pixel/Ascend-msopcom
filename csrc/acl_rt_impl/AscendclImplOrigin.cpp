@@ -56,6 +56,7 @@ void AscendclImplOriginCtor()
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtKernelArgsFinalizeImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtLaunchKernelWithConfigImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtLaunchKernelImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtLaunchKernelV2Impl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtGetFunctionAddrImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtSynchronizeStreamWithTimeoutImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtSynchronizeStreamImpl);
@@ -209,6 +210,11 @@ aclError aclrtLaunchKernelWithConfigImplOrigin(aclrtFuncHandle funcHandle, uint3
 aclError aclrtLaunchKernelImplOrigin(aclrtFuncHandle funcHandle, uint32_t blockDim, const void *argsData, size_t argsSize, aclrtStream stream)
 {
     LOAD_FUNCTION_BODY(AclRuntimeLibName(), aclrtLaunchKernelImpl, funcHandle, blockDim, argsData, argsSize, stream);
+}
+
+aclError aclrtLaunchKernelV2ImplOrigin(aclrtFuncHandle funcHandle, uint32_t numBlocks, const void *argsData, size_t argsSize, aclrtLaunchKernelCfg *cfg, aclrtStream stream)
+{
+    LOAD_FUNCTION_BODY(AclRuntimeLibName(), aclrtLaunchKernelV2Impl, funcHandle, numBlocks, argsData, argsSize, cfg, stream);
 }
 
 aclError aclrtLaunchKernelWithHostArgsImplOrigin(aclrtFuncHandle funcHandle, uint32_t blockDim, aclrtStream stream,

@@ -8,6 +8,7 @@ file(GLOB SOURCE
     HijackedFuncOfKernelArgsGetFinalizeTest.cpp
     HijackedFuncOfAclrtLaunchKernelWithConfigTest.cpp
     HijackedFuncOfAclrtLaunchKernelTest.cpp
+    HijackedFuncOfAclrtLaunchKernelV2Test.cpp
     HijackedFuncOfAclrtLaunchKernelWithHostArgsTest.cpp
     HijackedFuncOfAclrtCreateContextImplTest.cpp
     HijackedFuncOfAclrtGetDeviceImplTest.cpp

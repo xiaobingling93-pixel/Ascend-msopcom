@@ -112,6 +112,13 @@ TEST_F(AscendclImplOriginTest, call_aclrt_launch_kernel_impl_origin_expect_retur
     ASSERT_EQ(aclrtLaunchKernelImplOrigin(func, 0, nullptr, 0, stream), ACL_SUCCESS);
 }
 
+TEST_F(AscendclImplOriginTest, call_aclrt_launch_kernel_v2_impl_origin_expect_return_success)
+{
+    aclrtFuncHandle func{};
+    aclrtStream stream{};
+    ASSERT_EQ(aclrtLaunchKernelV2ImplOrigin(func, 0, nullptr, 0, nullptr, stream), ACL_SUCCESS);
+}
+
 TEST_F(AscendclImplOriginTest, call_aclmdl_ri_capture_begin_impl_origin_expect_return_success)
 {
     aclrtStream stream{};

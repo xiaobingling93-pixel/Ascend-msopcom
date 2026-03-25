@@ -146,6 +146,11 @@ aclError aclrtLaunchKernelImpl(aclrtFuncHandle funcHandle, uint32_t blockDim, co
     return ACL_SUCCESS;
 }
 
+aclError aclrtLaunchKernelV2Impl(aclrtFuncHandle funcHandle, uint32_t numBlocks, const void *argsData, size_t argsSize, aclrtLaunchKernelCfg *cfg, aclrtStream stream)
+{
+    return ACL_SUCCESS;
+}
+
 aclError aclrtResetDeviceForceImpl(int32_t deviceId)
 {
     return ACL_SUCCESS;

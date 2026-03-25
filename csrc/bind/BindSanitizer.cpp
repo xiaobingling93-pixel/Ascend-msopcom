@@ -64,6 +64,7 @@ void HijackedAscendclImplCtor()
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtKernelArgsGetPlaceHolderBufferImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtKernelArgsFinalizeImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtLaunchKernelImpl);
+    REGISTER_FUNCTION(AclRuntimeLibName(), aclrtLaunchKernelV2Impl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtLaunchKernelWithConfigImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtKernelArgsInitByUserMemImpl);
     REGISTER_FUNCTION(AclRuntimeLibName(), aclrtMallocWithCfgImpl);
@@ -764,6 +765,15 @@ aclError aclrtLaunchKernelImpl(aclrtFuncHandle funcHandle, uint32_t blockDim, co
     LayerGuard guard(HijackedLayerManager::Instance(), __func__);
     HijackedFuncOfAclrtLaunchKernelImpl instance;
     return instance.Call(funcHandle, blockDim, argsData, argsSize, stream);
+}
+
+aclError aclrtLaunchKernelV2Impl(aclrtFuncHandle funcHandle, uint32_t numBlocks, const void *argsData,
+                                  size_t argsSize, aclrtLaunchKernelCfg *cfg, aclrtStream stream)
+{
+    PRINT_ENTER_INSTRUMENTOR;
+    LayerGuard guard(HijackedLayerManager::Instance(), __func__);
+    HijackedFuncOfAclrtLaunchKernelV2Impl instance;
+    return instance.Call(funcHandle, numBlocks, argsData, argsSize, cfg, stream);
 }
 
 aclError aclrtKernelArgsInitByUserMemImpl(aclrtFuncHandle funcHandle, aclrtArgsHandle argsHandle,

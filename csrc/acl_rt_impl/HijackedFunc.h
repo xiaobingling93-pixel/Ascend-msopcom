@@ -482,6 +482,46 @@ private:
     bool isSink_{false};
 };
 
+class HijackedFuncOfAclrtLaunchKernelV2Impl : public decltype(AscendclImpHijackedType(&aclrtLaunchKernelV2Impl)) {
+public:
+    explicit HijackedFuncOfAclrtLaunchKernelV2Impl();
+    aclError Call(aclrtFuncHandle funcHandle, uint32_t numBlocks, const void *argsData,
+                  size_t argsSize, aclrtLaunchKernelCfg *cfg, aclrtStream stream) override;
+    void Pre(aclrtFuncHandle funcHandle, uint32_t numBlocks, const void *argsData,
+             size_t argsSize, aclrtLaunchKernelCfg *cfg, aclrtStream stream) override;
+    aclError Post(aclError ret) override;
+private:
+    bool InitParam(aclrtFuncHandle funcHandle, uint32_t numBlocks,
+                   const void *argsData, size_t argsSize, aclrtLaunchKernelCfg *cfg, aclrtStream stream);
+    void ProfPre(const std::function<bool(void)> &func, const std::function<void(const std::string &)> &bbCountTask,
+                 aclrtStream stm);
+    void DoOperandRecord();
+    void ProfPost();
+    void ProfPreForInstrProf(const std::function<bool(void)> &func,const std::function<void(const std::string &)> &bbCountTask, rtStream_t stream);
+ 	bool PrepareDbiTaskForInstrProf(ProfDBIType mode, uint64_t memSize);
+    void SanitizerPre();
+    void SanitizerPost();
+private:
+    aclrtFuncHandle funcHandle_ {nullptr};
+    uint32_t numBlocks_ {0};
+    aclrtStream stream_ {nullptr};
+    void *argsData_ {nullptr};
+    size_t argsSize_ {0};
+    aclrtLaunchKernelCfg *cfg_{nullptr};
+    std::shared_ptr<ProfDataCollect> profObj_ {nullptr};
+    std::function<void()> refreshParamFunc_ {nullptr};
+    int32_t devId_{0};
+    uint8_t *memInfo_{nullptr};
+    uint64_t memSize_{0};
+    FuncContextSP funcCtx_{nullptr};
+    LaunchContextSP launchCtx_ {nullptr};
+    ArgsContextSP newArgsCtx_{nullptr};
+    ArgsContextSP argsCtx_{nullptr};
+    uint64_t regId_{0};
+    bool skipSanitizer_{false}; // 是否跳过检测
+    bool isSink_{false};
+};
+
 class HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl : public decltype(AscendclImpHijackedType(&aclrtLaunchKernelWithHostArgsImpl)) {
 public:
     explicit HijackedFuncOfAclrtLaunchKernelWithHostArgsImpl();
