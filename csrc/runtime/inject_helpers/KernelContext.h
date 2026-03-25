@@ -30,7 +30,7 @@
 #include "acl_rt_impl/AscendclImplOrigin.h"
 #include "runtime/RuntimeOrigin.h"
 #include "runtime.h"
-#include "include/prof.h"
+#include "include/thirdparty/prof.h"
 #include "ascend_dump.h"
 #include "hccl.h"
 #include "runtime/inject_helpers/ArgsContext.h"

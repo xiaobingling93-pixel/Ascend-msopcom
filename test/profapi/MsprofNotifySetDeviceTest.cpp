@@ -24,7 +24,7 @@
 #undef protected
 
 #include "core/FuncSelector.h"
-#include "include/prof.h"
+#include "include/thirdparty/prof.h"
 #include "profapi/ProfInjectHelper.h"
 
 int g_setDeviceTime = 0;

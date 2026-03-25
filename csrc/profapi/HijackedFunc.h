@@ -20,7 +20,7 @@
 #ifndef __PROF_HIJACKED_FUNC_H__
 #define __PROF_HIJACKED_FUNC_H__
 
-#include "include/prof.h"
+#include "include/thirdparty/prof.h"
 #include "core/HijackedFuncTemplate.h"
 
 class ProfErrorTag;

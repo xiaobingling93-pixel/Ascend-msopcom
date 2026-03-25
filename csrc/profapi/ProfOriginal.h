@@ -18,7 +18,7 @@
 #ifndef MSOPT_PROFORIGINAL_H
 #define MSOPT_PROFORIGINAL_H
 
-#include "include/prof.h"
+#include "include/thirdparty/prof.h"
 #include "core/FunctionLoader.h"
 
 int32_t profSetProfCommandOrigin(VOID_PTR command, uint32_t len);

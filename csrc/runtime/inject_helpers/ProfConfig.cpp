@@ -31,6 +31,8 @@
 
 namespace {
 constexpr uint32_t MAX_NUM_PACKET = 64U;
+constexpr char const *MSOPPROF_EXE_PATH_ENV = {"MSOPPROF_EXE_PATH"};
+constexpr char const *CAMODEL_SOC_VERSION_ENV = {"CAMODEL_SOC_VERSION"};
 
 template <typename T>
 bool WaitForPayload(T &val)

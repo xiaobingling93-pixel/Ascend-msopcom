@@ -27,7 +27,7 @@
 #include "runtime/inject_helpers/KernelContext.h"
 #include "runtime/inject_helpers/ProfDataCollect.h"
 #include "utils/FileSystem.h"
-#include "include/prof.h"
+#include "include/thirdparty/prof.h"
 #include "profapi/RegisterMsopprofProfileCallback.h"
 /**
  * |  用例集 | MsprofReportAdditionalInfoCallbackImpl

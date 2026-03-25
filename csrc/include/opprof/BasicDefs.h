@@ -13,21 +13,21 @@
  * MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
  * See the Mulan PSL v2 for more details.
  * ------------------------------------------------------------------------- */
+#ifndef __BASIC_DEFS_H__
+#define __BASIC_DEFS_H__
 
-#ifndef __PROF_INJECT_HELPER_H__
-#define __PROF_INJECT_HELPER_H__
-#include <map>
-#include "include/thirdparty/prof.h"
+#include <cstdint>
+constexpr uint16_t PATH_MAX_LENGTH = 4096U;
+constexpr uint16_t NAME_MAX_LENGTH = 1024U;
+constexpr uint32_t UINT32_INVALID = UINT32_MAX;
+constexpr uint32_t PMU_EVENT_MAX_NUM = 8U;
+constexpr uint32_t EVENT_MAX_NUM = 96U;
+constexpr uint32_t PMU_EVENT_MAX_NUM_A5 = 10U;
+constexpr uint32_t EVENT_MAX_NUM_A5 = 60U;
 
-class ProfInjectHelper {
-public:
-
-    static ProfInjectHelper &Instance()
-    {
-        static ProfInjectHelper inst;
-        return inst;
-    }
-    std::map<uint32_t, ProfCommandHandle> handleMap_;
-    std::map<int32_t, bool> aicpuHandleCallMap_;
+enum class ReplayMode : uint8_t {
+    KERNEL = 0,
+    APPLICATION,
+    RANGE,
 };
-#endif // __PROF_INJECT_HELPER_H__
+#endif // __BASIC_DEFS_H__

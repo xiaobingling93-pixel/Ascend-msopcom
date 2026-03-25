@@ -19,7 +19,7 @@
 #define MSOPT_REGISTER_MSOPPROF_FUNC_H
 
 #include <map>
-#include "include/prof.h"
+#include "include/thirdparty/prof.h"
 #include "ProfOriginal.h"
 
 int32_t MsprofCompactInfoReportCallbackImpl(uint32_t agingFlag, const VOID_PTR data, uint32_t len);

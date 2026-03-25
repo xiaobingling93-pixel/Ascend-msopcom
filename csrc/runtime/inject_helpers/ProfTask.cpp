@@ -45,6 +45,8 @@ constexpr int FFTS_PROF_BLOCK_SHINK_DISABLE = 2;
 constexpr int FFTS_PROF_AIC_SCALE_ALL = 0;
 constexpr int FFTS_PROF_AIC_SCALE_PARTIAL = 1;
 constexpr int INSTR_PROF_PERIOD = 32;
+constexpr uint16_t INSTR_PROF_MODE_BIU_PERF = 0;
+constexpr uint16_t INSTR_PROF_MODE_PC_SAMPLING = 1;
 
 // ts data code
 using StarsSocLogConfigT = struct TagStarsSocLogConfig {

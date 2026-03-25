@@ -18,7 +18,7 @@
 #include "HijackedFunc.h"
 #include "ProfInjectHelper.h"
 #include "core/FuncSelector.h"
-#include "include/prof.h"
+#include "include/thirdparty/prof.h"
 #include "utils/InjectLogger.h"
 
 HijackedFuncOfMsprofRegisterCallback::HijackedFuncOfMsprofRegisterCallback()

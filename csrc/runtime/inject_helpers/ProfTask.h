@@ -48,6 +48,10 @@ enum class InstrProfState : uint8_t {
 
 class ProfTask {
 public:
+    struct InstrChnReadCtrl {
+        uint32_t splitFileNum = 0;
+        uint32_t InstrProfReadSize = 0;
+    };
     ProfTask(const MessageOfProfConfig &profTaskConfig, uint32_t deviceId) : profTaskConfig_(profTaskConfig),
         deviceId_(deviceId) {}
     virtual ~ProfTask() = default;

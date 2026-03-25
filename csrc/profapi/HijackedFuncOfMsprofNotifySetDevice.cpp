@@ -18,7 +18,7 @@
 #include "HijackedFunc.h"
 #include "core/FuncSelector.h"
 #include "ProfInjectHelper.h"
-#include "include/prof.h"
+#include "include/thirdparty/prof.h"
 
 HijackedFuncOfMsprofNotifySetDevice::HijackedFuncOfMsprofNotifySetDevice()
     : HijackedFuncType("profapi", "MsprofNotifySetDevice") {}
