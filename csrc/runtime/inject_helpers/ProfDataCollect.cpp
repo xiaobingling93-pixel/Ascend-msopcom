@@ -516,6 +516,10 @@ SimulatorLauncher::SimulatorLauncher()
     if (!opprofPath.empty()) {
         opprofInjectionLib_ = JoinPath({opprofPath, MSOPPROF_INJECTION_LIB_PATH_FROM_MSOPPROF});
         kernelLaunchBinPath_ = JoinPath({opprofPath, "bin", "kernel-launcher"});
+        // 验证可执行文件是否存在且可执行
+        if (!IsExist(kernelLaunchBinPath_) || !IsExecutable(kernelLaunchBinPath_)) {
+            ERROR_LOG("Kernel launcher not found or not executable: %s", kernelLaunchBinPath_.c_str());
+        }
     }
 }
 
