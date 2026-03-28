@@ -189,6 +189,7 @@ static void HandleSigInt(int32_t signo)
     }
 }
 
+// DataCollect 设计为放到cpp文件中实现，不对外暴露
 class DataCollect {
 public:
     int32_t deviceId_ = 0;

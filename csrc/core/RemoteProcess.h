@@ -21,8 +21,6 @@
 #include <string>
 #include "Communication.h"
 
-class Server;
-
 // RemoteProcess类是远端进程的抽象，主要是工具所在的进程
 // 该代码在工具代码仓中集成时，建议改成Process就好。
 // 该类主要提供与LocalProcess协同的能力，各个工具最好共用该能力
