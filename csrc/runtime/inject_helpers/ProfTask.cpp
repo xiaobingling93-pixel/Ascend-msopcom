@@ -174,7 +174,7 @@ public:
             {InstrChannel::GROUP5_AIV1, {InstrProfGrpType::AIV1, InstrProfGrpId::GROUP5}},
         };
     }
-    bool Start(uint32_t replayCount, bool isSimt) override;
+    bool Start(uint32_t replayCount, bool hasSimt) override;
     void Stop() override;
 private:
     bool WriteInstrChannelData(const std::string &prefixName, InstrChannel channelId,
@@ -194,7 +194,7 @@ class ProfTaskOf910B : public ProfTask {
 public:
     ProfTaskOf910B(const MessageOfProfConfig &profTaskConfig, uint32_t deviceId)
         : ProfTask(profTaskConfig, deviceId) {}
-    bool Start(uint32_t replayCount, bool isSimt) override;
+    bool Start(uint32_t replayCount, bool hasSimt) override;
     void Stop() override;
 private:
     bool isStarsStart_ = false;
@@ -208,7 +208,7 @@ class ProfTaskOf310P : public ProfTask {
 public:
     ProfTaskOf310P(const MessageOfProfConfig &profTaskConfig, uint32_t deviceId)
         : ProfTask(profTaskConfig, deviceId) {}
-    bool Start(uint32_t replayCount, bool isSimt) override;
+    bool Start(uint32_t replayCount, bool hasSimt) override;
     void Stop() override;
 private:
     bool StartHwtsTask();
@@ -696,13 +696,13 @@ bool ProfTaskOfA5::StartStarsTask()
     return true;
 }
 
-bool ProfTaskOfA5::Start(uint32_t replayCount, bool isSimt)
+bool ProfTaskOfA5::Start(uint32_t replayCount, bool hasSimt)
 {
     profRunning_ = true;
-    isSimt_ = isSimt;
+    hasSimt_ = hasSimt;
     // 状态机: IDLE 态下根据配置决定进入 PC_SAMPLING 或 TIMELINE
     if (instrProfState_ == InstrProfState::IDLE &&
-        ProfConfig::Instance().IsPCSamplingEnabled() && isSimt_) {
+        ProfConfig::Instance().IsPCSamplingEnabled() && hasSimt_) {
         instrProfState_ = InstrProfState::PC_SAMPLING;
         return StartInstrProfTask(INSTR_PROF_MODE_PC_SAMPLING);
     }
@@ -829,7 +829,7 @@ bool ProfTaskOf910B::StartHCCSTask()
     return true;
 }
 
-bool ProfTaskOf910B::Start(uint32_t replayCount, bool isSimt)
+bool ProfTaskOf910B::Start(uint32_t replayCount, bool hasSimt)
 {
     profRunning_ = true;
     if (profTaskConfig_.l2CachePmu[0] != 0) {
@@ -894,7 +894,7 @@ bool ProfTaskOf310P::StartHwtsTask()
     return true;
 }
 
-bool ProfTaskOf310P::Start(uint32_t replayCount, bool isSimt)
+bool ProfTaskOf310P::Start(uint32_t replayCount, bool hasSimt)
 {
     profRunning_ = true;
 
