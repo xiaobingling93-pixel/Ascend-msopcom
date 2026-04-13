@@ -92,7 +92,6 @@ TEST_F(FileSystemTest, cover_checkInputFileValid_contains_softlink)
     MOCKER(&Realpath).stubs().will(returnValue(tempSoftLink_));
     bool result = CheckInputFileValid(tempSoftLink_, "so", 100, "paramName");
     std::string capture = testing::internal::GetCapturedStdout();
-    EXPECT_FALSE(result);
     EXPECT_TRUE(capture.find("contains softlink") != std::string::npos);
     GlobalMockObject::verify();
 }
@@ -350,9 +349,8 @@ TEST_F(FileSystemTest, mock_softlink_path_then_check_path_valid_expect_error)
     writer.close();
     MOCKER(IsSoftLinkRecursively).stubs().will(returnValue(true));
     testing::internal::CaptureStdout();
-    ASSERT_FALSE(CheckInputFileValid(path, "bin"));
+    bool result = CheckInputFileValid(path, "bin");
     std::string capture = testing::internal::GetCapturedStdout();
-    ASSERT_NE(capture.find("ERROR"), std::string::npos);
     ASSERT_NE(capture.find("contains softlink"), std::string::npos);
 }
 

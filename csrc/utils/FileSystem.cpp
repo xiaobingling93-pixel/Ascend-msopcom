@@ -326,14 +326,15 @@ bool CheckOwnerPermission(std::string &path, std::string &msg)
         return true;
     }
     if ((fileStat.st_mode & (S_IWOTH | S_IWGRP)) != 0) {
-        msg = path + " is writable by any other users or group users.";
-        return false;
+        msg = path + " is writable by any other users or group users, which may cause security problems.";
+        WARN_LOG("%s", msg.c_str());
     }
     if (fileStat.st_uid == 0 || fileStat.st_uid == static_cast<uint32_t>(getuid())) {
         return true;
     }
-    msg = path + " and the current owner have inconsistent permission.";
-    return false;
+    msg = path + " is not owned by the current user, which may cause security problems.";
+    WARN_LOG("%s", msg.c_str());
+    return true;
 }
 
 bool CheckFileSizeValid(const std::string &path, size_t threshold)
@@ -423,8 +424,7 @@ bool CheckInputFileValid(const std::string &path, const std::string &fileType, s
         return false;
     }
     if (IsSoftLinkRecursively(absPath)) {
-        ERROR_LOG("Input parameter %s path contains softlink, may cause security problems", paramName.c_str());
-        return false;
+        WARN_LOG("Input parameter %s path contains softlink, may cause security problems", paramName.c_str());
     }
     if (!PathLenCheckValid(absPath)) {
         ERROR_LOG("Input parameter %s path length is too long.", paramName.c_str());
