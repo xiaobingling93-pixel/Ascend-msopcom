@@ -41,7 +41,7 @@ TEST(MsprofReportAdditionalInfoCallbackImpl, write_aicore_timestamp_bin_success)
     MOCKER(rtGetDeviceOrigin).stubs().will(returnValue(1));
     std::string path = "./output";
     ASSERT_TRUE(MkdirRecusively(path));
-    MOCKER(&ProfDataCollect::GetTimeStampDeviceOutputPath).stubs().will(returnValue(path));
+    MOCKER(&GetEnv).stubs().will(returnValue(path));
     MOCKER(&KernelContext::GetMC2Flag).stubs().will(returnValue(true));
 
     MsprofAdditionalInfo tempdata;
@@ -49,7 +49,7 @@ TEST(MsprofReportAdditionalInfoCallbackImpl, write_aicore_timestamp_bin_success)
     tempdata.type = 0;
     VOID_PTR data = &tempdata;
     MsprofReportAdditionalInfoCallbackImpl(1, data, 0);
-    ASSERT_TRUE(IsPathExists("./output/aic_timestamp.bin"));
+    ASSERT_TRUE(IsPathExists("./output/device0/aic_timestamp.bin"));
     RemoveAll(path);
     GlobalMockObject::verify();
 }

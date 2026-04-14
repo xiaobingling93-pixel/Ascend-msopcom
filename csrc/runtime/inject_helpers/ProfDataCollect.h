@@ -64,7 +64,6 @@ public:
     bool IsOperandRecordNeedGen(const std::string &socVersion);
     bool RangeReplay(const rtStream_t &stream, const aclmdlRI &modelRI);
     static std::string GetAicoreOutputPath(int32_t device);
-    static std::string GetTimeStampDeviceOutputPath(int32_t device);
     static uint32_t GetDeviceReplayCount(int32_t device);
     static RangeReplayConfig GetThreadRangeConfigMap(std::thread::id threadId);
     static void ResetRangeConfig(std::thread::id threadId);

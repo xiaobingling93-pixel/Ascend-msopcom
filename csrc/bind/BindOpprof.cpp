@@ -62,8 +62,6 @@ void RegisterProfApi()
     std::string soName = "profapi";
     REGISTER_LIBRARY(soName);
     REGISTER_FUNCTION(soName, MsprofRegisterCallback);
-    REGISTER_FUNCTION(soName, MsprofReportAdditionalInfo);
-    REGISTER_FUNCTION(soName, MsprofReportCompactInfo);
     REGISTER_FUNCTION(soName, MsprofNotifySetDevice);
     REGISTER_FUNCTION(soName, profSetProfCommand);
     REGISTER_FUNCTION(soName, MsprofRegisterProfileCallback);

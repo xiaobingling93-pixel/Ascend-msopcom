@@ -199,7 +199,6 @@ public:
     bool hasSimt_ = false;
     static std::mutex outputMutex_;
     static std::map<int32_t, std::string> deviceOutputPathMap_;
-    static std::map<int32_t, std::string> timeStampDevicePathMap_;
     static std::mutex replayCountMutex_;
     static std::map<int32_t, uint32_t> deviceReplayCountMap_;
     static std::mutex rangeConfigMutex_;
@@ -240,7 +239,6 @@ public:
     virtual void GenRecordData(uint64_t memSize, uint8_t *memInfo, const std::string &recordName) const {};
 };
 std::map<int32_t, std::string> DataCollect::deviceOutputPathMap_; // 静态成员类外初始化
-std::map<int32_t, std::string> DataCollect::timeStampDevicePathMap_;
 std::map<int32_t, uint32_t> DataCollect::deviceReplayCountMap_;
 std::map<std::thread::id, RangeReplayConfig> DataCollect::threadRangeConfigMap_;
 std::mutex DataCollect::outputMutex_ {};
@@ -421,9 +419,6 @@ DataCollect::DataCollect(const LaunchContextSP &ctx, bool isInitOutput)
     } else {
         outputPath_ = ProfConfig::Instance().GetOutputPathFromRemote(kernelName, devId);
         std::lock_guard<std::mutex> lk(outputMutex_);
-        std::string devicePath = outputPath_;
-        RollbackPath(devicePath, 3);
-        timeStampDevicePathMap_[devId] = devicePath.empty() ? timeStampDevicePathMap_[devId] : devicePath;
         deviceOutputPathMap_[devId] = outputPath_;
     }
     if (!outputPath_.empty() && !MkdirRecusively(outputPath_)) {
@@ -1757,17 +1752,6 @@ std::string ProfDataCollect::GetAicoreOutputPath(int32_t device)
     }
     return DataCollect::deviceOutputPathMap_[device];
 }
-
-std::string ProfDataCollect::GetTimeStampDeviceOutputPath(int32_t device)
-{
-    std::lock_guard<std::mutex> lk(DataCollect::outputMutex_);
-    if (DataCollect::timeStampDevicePathMap_.find(device) == DataCollect::timeStampDevicePathMap_.end() || DataCollect::timeStampDevicePathMap_[device].empty()) {
-        DEBUG_LOG("Can not find device %d output path", device);
-        return "";
-    }
-    return DataCollect::timeStampDevicePathMap_[device];
-}
-
 
 uint32_t ProfDataCollect::GetDeviceReplayCount(int32_t device)
 {

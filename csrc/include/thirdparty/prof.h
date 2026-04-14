@@ -125,10 +125,8 @@ enum class ProfilerCallbackType : uint32_t {
 };
 
 int32_t MsprofRegisterCallback(uint32_t moduleId, ProfCommandHandle handle);
-int32_t MsprofReportAdditionalInfo(uint32_t agingFlag, const VOID_PTR data, uint32_t length);
 int32_t MsprofNotifySetDevice(uint32_t chipId, uint32_t deviceId, bool isOpen);
 int32_t profSetProfCommand(VOID_PTR command, uint32_t len);
-int32_t MsprofReportCompactInfo(uint32_t agingFlag, const VOID_PTR data, uint32_t length);
 int32_t MsprofRegisterProfileCallback(uint32_t callbackType, VOID_PTR callback, uint32_t len);
 #ifdef __cplusplus
 } // extern "C"

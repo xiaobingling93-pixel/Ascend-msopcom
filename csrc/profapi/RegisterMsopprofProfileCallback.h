@@ -22,9 +22,46 @@
 #include "include/thirdparty/prof.h"
 #include "ProfOriginal.h"
 
+constexpr uint16_t MSPROF_DATA_HEAD_MAGIC_NUM = 0x5a5a;
+constexpr uint64_t MSPROF_EVENT_FLAG = 0xFFFFFFFFFFFFFFFFULL;
+
+struct MsprofApi { // for MsprofReportApi
+    uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
+    uint16_t level;
+    uint32_t type;
+    uint32_t threadId;
+    uint32_t reserve;
+    uint64_t beginTime;
+    uint64_t endTime;
+    uint64_t itemId;
+};
+
+struct MsprofEvent {  // for MsprofReportEvent
+    uint16_t magicNumber = MSPROF_DATA_HEAD_MAGIC_NUM;
+    uint16_t level;
+    uint32_t type;
+    uint32_t threadId;
+    uint32_t requestId; // 0xFFFF means single event
+    uint64_t timeStamp;
+    uint64_t reserve = MSPROF_EVENT_FLAG;
+    uint64_t itemId;
+};
+
 int32_t MsprofCompactInfoReportCallbackImpl(uint32_t agingFlag, const VOID_PTR data, uint32_t len);
 
 int32_t MsprofReportAdditionalInfoCallbackImpl(uint32_t agingFlag, const VOID_PTR data, uint32_t len);
+
+uint64_t MsprofGetHashIdImpl(const char* hashInfo, size_t len);
+
+int8_t MsprofHostFreqIsEnableImpl();
+
+int32_t MsprofApiReporterCallbackImpl(uint32_t agingFlag, const MsprofApi * const data);
+
+int32_t MsprofEventReporterCallbackImpl(uint32_t agingFlag, const MsprofEvent* const event);
+
+int32_t MsprofRegReportTypeInfoImpl(uint16_t level, uint32_t typeId, const char* name, size_t len);
+
+int32_t MsprofDeviceStateImpl(VOID_PTR deviceState, uint32_t len);
 
 class RegisterMsopprofProfileCallback {
 public:
