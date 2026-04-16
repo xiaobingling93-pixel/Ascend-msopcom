@@ -314,13 +314,19 @@ inline void DecomposeThreadId(uint16_t threadId, RecordBlockHead const &head, Si
     threadLoc.idZ = threadId / (threadXDim * threadYDim);
 }
 
+inline bool IsReadStatus(MemoryByteStatus memStatus)
+{
+    return (memStatus == MemoryByteStatus::GLOBAL_READ) || (memStatus == MemoryByteStatus::READ);
+}
+
 void MergeSmRecord(std::vector<ShadowMemoryRecord> &records, uint64_t status, uint64_t addr, RecordBlockHead const &head)
 {
     ShadowMemoryRecord record{};
     record.addr = addr;
     record.size = 1;
     record.space = AddressSpace::GM;
-    record.opType = MemOpType::STORE;
+    MemoryByteStatus memStatus = static_cast<MemoryByteStatus>((status >> MEMORY_STATUS_START_BIT) & MEMORY_STATUS_MASK);
+    record.accessType = IsReadStatus(memStatus) ? AccessType::READ : AccessType::WRITE;
     uint16_t threadId = status & THREAD_ID_MASK;
     DecomposeThreadId(threadId, head, record.threadLoc);
     record.location.pc = (status >> PC_START_BIT) & PC_MASK;
@@ -330,7 +336,7 @@ void MergeSmRecord(std::vector<ShadowMemoryRecord> &records, uint64_t status, ui
         return;
     }
     auto &back = records.back();
-    if (back.location == record.location && back.opType == record.opType && back.space == record.space &&
+    if (back.location == record.location && back.accessType == record.accessType && back.space == record.space &&
         back.threadLoc == record.threadLoc) {
         if (back.addr + back.size == record.addr) {
             back.size += record.size;
@@ -351,8 +357,7 @@ inline void ParseSmL2Table(uint64_t *l2TblPtr, size_t l0Idx, size_t l1Idx, Recor
             MEMORY_STATUS_MASK);
         OnlineMemoryType memType = static_cast<OnlineMemoryType>((status >> MEMORY_TYPE_START_BIT) &
             MEMORY_TYPE_MASK);
-        if ((memStatus == MemoryByteStatus::WRITE || memStatus == MemoryByteStatus::RACE) &&
-            memType == OnlineMemoryType::GM) {
+        if ((memStatus != MemoryByteStatus::DEFAULT) && (memType == OnlineMemoryType::GM)) {
             uint64_t addr = (l0Idx << l1OneBits) | (l1Idx << l2OneBits) | l2Idx;
             MergeSmRecord(records, status, addr, head);
         }

@@ -377,6 +377,12 @@ enum class MemOpType : uint32_t {
     INVALID,
 };
 
+enum class AccessType: uint8_t {
+    READ = 0U,
+    WRITE,
+    MEMCPY_BLOCKS,
+};
+
 /// 内存空间枚举，MemOpRecord 使用，后续逐步弃用
 enum class AddressSpace : int32_t { // 待修改为int8_t
     PRIVATE = 0,
@@ -418,7 +424,7 @@ struct Location {
 };
 
 struct ShadowMemoryRecordHead {
-    uint32_t type = 40010;
+    uint32_t type = 80000; // 需要保证和sanitizer仓RecordType::SHADOW_MEMORY枚举保持一致，用于sanitizer解析协议
     uint64_t recordCount;
 };
 
@@ -428,7 +434,7 @@ struct ShadowMemoryRecord {
     Location location;
     SimtThreadLocation threadLoc;
     AddressSpace space;
-    MemOpType opType;
+    AccessType accessType;
 };
 
 /// 内存分配信息来源，优先级为 MANUAL > EXTRA > ACL > RT > HAL
