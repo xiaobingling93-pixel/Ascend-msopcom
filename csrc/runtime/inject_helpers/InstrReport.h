@@ -21,23 +21,15 @@
 #include <string>
 
 #include "utils/Protocol.h"
-#include "core/PlatformConfig.h"
-#include "runtime/inject_helpers/KernelContext.h"
-#include "runtime/inject_helpers/RegisterContext.h"
-#include "runtime/inject_helpers/LaunchContext.h"
+#include "KernelContext.h"
+#include "RegisterContext.h"
+#include "LaunchContext.h"
+#include "LaunchInitFinalize.h"
 
 extern "C" {
 uint8_t *__sanitizer_init(uint64_t blockDim);
 void __sanitizer_finalize(uint8_t *memInfo, uint64_t blockDim);
 } // extern "C"
-
-/**
- * @brief 获取最后一次 launch 的算子对应的算子类型
- */
-KernelType GetCurrentKernelType(void);
-
-KernelType GetKernelType(KernelContext::RegisterEvent const &registerEvent,
-                         KernelContext::LaunchEvent const &launchEvent);
 
 /**
  * @brief 获取最后一次 launch 的算子对应的架构类型
