@@ -495,6 +495,9 @@ enum class InstrType {
     HSET_FLAGI,
     HWAIT_FLAG,
     HWAIT_FLAGI,
+    SIMT_CALL,
+    SIMT_START,
+    SIMT_END,
 
     MAX
 };
