@@ -224,8 +224,9 @@ void MergeSmRecord(std::vector<ShadowMemoryRecord> &records, uint64_t status, ui
     ShadowMemoryRecord record{};
     record.addr = addr;
     record.size = 1;
-    record.space = AddressSpace::GM;
     MemoryByteStatus memStatus = static_cast<MemoryByteStatus>((status >> MEMORY_STATUS_START_BIT) & MEMORY_STATUS_MASK);
+    OnlineMemoryType memType = static_cast<OnlineMemoryType>((status >> MEMORY_TYPE_START_BIT) & MEMORY_TYPE_MASK);
+    record.space = memType == OnlineMemoryType::GM ? AddressSpace::GM : AddressSpace::UB;
     record.accessType = IsReadStatus(memStatus) ? AccessType::READ : AccessType::WRITE;
     uint16_t threadId = status & THREAD_ID_MASK;
     DecomposeThreadId(threadId, head, record.threadLoc);
@@ -257,7 +258,8 @@ inline void ParseSmL2Table(uint64_t *l2TblPtr, size_t l0Idx, size_t l1Idx, Recor
             MEMORY_STATUS_MASK);
         OnlineMemoryType memType = static_cast<OnlineMemoryType>((status >> MEMORY_TYPE_START_BIT) &
             MEMORY_TYPE_MASK);
-        if ((memStatus != MemoryByteStatus::DEFAULT) && (memType == OnlineMemoryType::GM)) {
+        if ((memStatus != MemoryByteStatus::DEFAULT) &&
+	        (memType == OnlineMemoryType::GM || memType == OnlineMemoryType::UB)) {
             uint64_t addr = (l0Idx << l1OneBits) | (l1Idx << l2OneBits) | l2Idx;
             MergeSmRecord(records, status, addr, head);
         }
